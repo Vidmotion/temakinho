@@ -145,3 +145,7 @@ wp-content/themes/*
 # Unica eccezione necessaria, perche' intercettata da `.env.*`:
 # ==========================================================================
 !.env.example
+
+# Internal / reference-only files
+wp-content/plugins/tmk-design-system/PROJECT_CONTEXT.txt
+TMK DOCUMENTS/screencapture-temakinho-integrityline-app-page-appPageName-Privacy-policy-2026-07-31-12_26_35.png
