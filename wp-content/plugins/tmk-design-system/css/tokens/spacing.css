@@ -1,0 +1,23 @@
+/* TMK spacing — 4px base, ten steps: 4/8/12/16/24/32/48/64/96/128 (10_SPEC Ch.10).
+   Roles: inset (inside a component), stack (vertical between siblings/sections), inline (horizontal). */
+:root{
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;
+  --space-6:32px;--space-7:48px;--space-8:64px;--space-9:96px;--space-10:128px;
+
+  /* Inset roles (lower steps) */
+  --space-inset-sm:var(--space-3);
+  --space-inset-md:var(--space-4);
+  --space-inset-lg:var(--space-5);
+  --space-inset-xl:var(--space-6);
+
+  /* Inline roles */
+  --space-inline-sm:var(--space-2);
+  --space-inline-md:var(--space-4);
+  --space-inline-lg:var(--space-5);
+
+  /* Stack roles — generous at the top: negative space is a premium signal */
+  --space-stack-sm:var(--space-3);
+  --space-stack-md:var(--space-5);
+  --space-stack-lg:var(--space-7);
+  --space-stack-section:clamp(var(--space-8),8vw,var(--space-10));
+}

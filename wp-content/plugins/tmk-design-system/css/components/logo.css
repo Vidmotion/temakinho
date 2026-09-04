@@ -1,0 +1,4 @@
+/* TMK logo — shared, see inc/logo.php for why this is inlined SVG + currentColor rather than <img>.
+   One artwork; color comes entirely from whatever sets `color` on an ancestor (Header = ink, Footer = tatami-50). */
+.tmk-logo{display:inline-block}
+.tmk-logo .st0{fill:currentColor}

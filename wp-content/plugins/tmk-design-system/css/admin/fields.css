@@ -1,0 +1,53 @@
+/* TMK editorial fields — wp-admin only. Deliberately plain: it borrows WordPress's own controls
+   and spacing so the client is never learning a second interface. No design tokens here, because
+   the admin is not the design system's surface. */
+.tmk-af__row { margin: 0 0 18px; }
+.tmk-af__row:last-child { margin-bottom: 4px; }
+.tmk-af__label { display: block; margin: 0 0 4px; font-weight: 600; }
+.tmk-af__desc { margin: 5px 0 0; color: #646970; font-size: 12px; line-height: 1.5; }
+.tmk-af__input { width: 100%; max-width: 720px; }
+.tmk-af__input--sm { width: auto; max-width: 260px; }
+textarea.tmk-af__input { line-height: 1.5; }
+.tmk-af__check { display: inline-flex; align-items: center; gap: 8px; }
+.tmk-af__danger { color: #b32d2e; }
+
+/* checklist (allergeni, etichette) */
+.tmk-af__checklist { display: grid; grid-template-columns: repeat(var(--tmk-af-cols, 1), minmax(0, 1fr)); gap: 4px 24px; margin: 0; max-width: 720px; }
+.tmk-af__checklist li { margin: 0; }
+.tmk-af__checklist label { display: flex; align-items: baseline; gap: 8px; }
+.tmk-af__checklist b { display: inline-block; min-width: 1.4em; }
+
+/* single media */
+.tmk-af__media-preview { margin: 0 0 8px; }
+.tmk-af__media-preview img { max-width: 150px; height: auto; display: block; border: 1px solid #dcdcde; }
+
+/* gallery */
+.tmk-af__gallery-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; padding: 10px; min-height: 96px; background: #f6f7f7; border: 1px dashed #c3c4c7; border-radius: 4px; }
+.tmk-af__gallery-list:empty::before { content: 'Nessuna foto. Premi “Aggiungi foto”.'; color: #646970; font-size: 12px; }
+.tmk-af__gallery-list > li { position: relative; margin: 0; width: 90px; height: 90px; cursor: move; }
+.tmk-af__gallery-list img { width: 90px; height: 90px; object-fit: cover; display: block; border: 1px solid #dcdcde; background: #fff; }
+.tmk-af__count { color: #646970; font-size: 12px; }
+
+/* repeatable rows */
+.tmk-af__rows-head { display: grid; grid-template-columns: 22px 1fr 1fr 28px; gap: 8px; margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #646970; }
+.tmk-af__rows-head span:first-child { grid-column: 2; }
+.tmk-af__rows-head span:nth-child(2) { grid-column: 3; }
+.tmk-af__rows-list { margin: 0 0 10px; padding: 0; }
+.tmk-af__rowitem { display: grid; grid-template-columns: 22px 1fr 1fr 28px; gap: 8px; align-items: center; margin: 0 0 6px; }
+.tmk-af__rowitem input { width: 100%; }
+.tmk-af__grip { cursor: move; color: #a7aaad; text-align: center; user-select: none; line-height: 1; }
+.tmk-af__rows-list:empty { display: none; }
+
+.tmk-af__x { border: 0; background: transparent; color: #b32d2e; font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 4px; }
+.tmk-af__gallery-list .tmk-af__x { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; background: #fff; border: 1px solid #dcdcde; border-radius: 50%; font-size: 14px; padding: 0; }
+
+/* read-only notes */
+.tmk-af__row--note { padding: 10px 12px; background: #f0f6fc; border-left: 4px solid #72aee6; }
+.tmk-af__row--note .tmk-af__label { margin: 0 0 2px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #50575e; }
+.tmk-af__note { font-size: 13px; line-height: 1.6; }
+.tmk-af__note code { font-size: 11px; word-break: break-all; }
+
+/* city radios */
+.tmk-af__radios { margin: 0; max-height: 220px; overflow: auto; }
+.tmk-af__radios li { margin: 0 0 2px; }
+.tmk-af__radios label { display: flex; align-items: center; gap: 8px; }

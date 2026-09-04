@@ -1,0 +1,139 @@
+/* TMK color system — Layer 1 primitives (10-step tonal families) + Layer 2 semantic roles.
+   Components consume SEMANTIC roles only, never primitives (04_DESIGN_FOUNDATIONS §4). */
+:root{
+  /* Primitive — tatami (warm cream neutral stage) */
+  --tatami-50:#FDFBF5;--tatami-100:#F7F1E3;--tatami-200:#EFE5CF;--tatami-300:#E2D3B6;--tatami-400:#C9B28C;--tatami-500:#A68C63;--tatami-600:#816545;--tatami-700:#5C4530;--tatami-800:#3D2C1F;--tatami-900:#261B12;
+  /* Primitive — ember (terracotta/orange, the reserved action family) */
+  --ember-50:#FEF3EB;--ember-100:#FBE0CC;--ember-200:#F6C09B;--ember-300:#F09963;--ember-400:#EB7637;--ember-500:#E7591D;--ember-600:#C74814;--ember-700:#9E3910;--ember-800:#722A0D;--ember-900:#471B09;
+  /* Primitive — the lagoa (teal), céu (blue), ouro (gold) and fogo (red) families were REMOVED in
+     the Session 10 brand-compliance pass: the site's only accents are now orange (ember) + green
+     (erva). Nothing references them any more — the four Concept accents collapsed to ember/erva, the
+     map + footer-success were retinted green, and error/info left red/teal. Do not reintroduce them. */
+  /* Primitive — ink (grounding near-black, warm) */
+  --ink:#241C13;
+
+  /* Semantic — surface (the governed neutral stage) */
+  --color-surface:var(--tatami-100);
+  --color-surface-raised:var(--tatami-50);
+  --color-surface-sunken:var(--tatami-200);
+  --color-surface-inverse:var(--ink);
+
+  /* Semantic — text */
+  --color-text-primary:var(--ink);
+  --color-text-secondary:var(--tatami-700);
+  --color-text-inverse:var(--tatami-50);
+
+  /* Semantic — border */
+  --color-border-default:var(--tatami-300);
+  --color-border-strong:var(--tatami-700);
+
+  /* Semantic — action-primary (the one reserved accent; never reused decoratively on the same view).
+     FIX 34 — WCAG AA semantic refinement (PROJECT_CONTEXT 18.5 / O1). The ember FAMILY is unchanged:
+     no primitive was touched, so the brand palette is intact. What changed is which step of that
+     family each SEMANTIC ROLE points at, because a fill and a foreground carry different contrast
+     obligations against the same stage and therefore cannot be the same token.
+     As a FILL, measured against --color-action-on-primary (tatami-50):
+       ember-500 3.47:1 FAIL -> ember-600 4.65:1 PASS  (hover ember-700 6.66:1, active ember-800 9.89:1)
+     As a FOREGROUND, measured against --color-surface (tatami-100):
+       ember-500 3.19:1 FAIL, ember-600 4.27:1 FAIL -> ember-700 6.12:1 PASS (hover ember-800 8.6:1)
+     Button and card action labels are uppercase caption-size text, so the 3:1 large-text allowance
+     never applies; 4.5:1 is the real floor everywhere the accent is spent. Darkening the fill one
+     step was preferred over inverting the label to ink (ink on ember-500 is 4.67:1 and would also
+     pass) because cream-on-terracotta IS the recognisable Claude Design button. */
+  --color-action-primary:var(--ember-600);
+  --color-action-primary-hover:var(--ember-700);
+  --color-action-primary-active:var(--ember-800);
+  --color-action-primary-focus:var(--ember-600);
+  --color-action-primary-disabled:var(--tatami-300);
+  --color-action-on-primary:var(--tatami-50);
+
+  /* Semantic — the accent spent as a FOREGROUND (link, caption action label, active nav rule).
+     Two steps deeper than the fill so ember still reads as the same accent while clearing 4.5:1 on
+     every surface in the neutral stage (tatami-50/-100/-200). Consume this — never the fill — when
+     the accent lands on text, an icon, or a 1px rule over a light surface. */
+  --color-action-primary-on-light:var(--ember-700);
+  --color-action-primary-on-light-hover:var(--ember-800);
+
+  /* Semantic — action-secondary (ink outline register) */
+  --color-action-secondary:var(--ink);
+  --color-action-secondary-hover:var(--tatami-800);
+  --color-action-secondary-active:var(--tatami-900);
+
+  /* Semantic — accent-concept (bounded per-Concept accent; root default = Standard, a NEUTRAL distinct from every Concept — RD-001 H6) */
+  --color-accent-concept:var(--tatami-700);
+  --color-accent-concept-soft:var(--tatami-200);
+  --color-accent-concept-on-light:var(--tatami-700);
+
+  /* Semantic — feedback */
+  /* Feedback — Session 10 brand compliance: success stays green; error moved OFF red to a deep
+     burnt-orange (ember-800) so a validation error still reads as an alert without any red; info
+     moved OFF teal to green. Warning stays amber (warm, not red/pink). */
+  --color-feedback-success:#2F7D53;
+  --color-feedback-warning:#B98424;
+  --color-feedback-error:#722A0D;
+  --color-feedback-info:#50643B;
+
+  /* Focus ring (visible focus is mandatory, 04 §17) */
+  --focus-ring:2px solid var(--color-action-primary-focus);
+  --focus-ring-offset:2px;
+}
+/* Concept accent slots — one variable, many values (02_CREATIVE_STRATEGY Ch.15).
+   SESSION 10 BRAND COMPLIANCE: the four Concept accents were collapsed to the two — and only two —
+   approved brand accents: ember (orange) and erva (green). Warm concepts (Fuego, Tierra) = orange,
+   cool concepts (Aqua, Arya) = green. The original per-concept teal/blue/gold/red identities were
+   retired at the client's final QA directive (no red/teal/blue/gold anywhere on the site).
+   The fill / on-light split is preserved for WCAG AA in both roles:
+     --color-accent-concept          fill  — cream on it >= 4.5:1 (ember-600 4.65:1 · erva-700 6.3:1)
+     --color-accent-concept-on-light text  — >= 4.5:1 on tatami-200 (ember-700 · erva-800). */
+[data-concept="aqua"]{--color-accent-concept:var(--erva-700);--color-accent-concept-soft:var(--erva-100);--color-accent-concept-on-light:var(--erva-800)}
+[data-concept="arya"]{--color-accent-concept:var(--erva-700);--color-accent-concept-soft:var(--erva-100);--color-accent-concept-on-light:var(--erva-800)}
+[data-concept="tierra"]{--color-accent-concept:var(--ember-600);--color-accent-concept-soft:var(--ember-100);--color-accent-concept-on-light:var(--ember-700)}
+[data-concept="fuego"]{--color-accent-concept:var(--ember-600);--color-accent-concept-soft:var(--ember-100);--color-accent-concept-on-light:var(--ember-700)}
+
+
+/* ---------------------------------------------------------------------------
+ * SHELL CHROME — tokenised from Claude Design's shell/refinements.css.
+ *
+ * That file introduces a tatami-green persistent header CTA as two raw literals
+ * (#50643B, #43542F) and recolours the primary nav to --tatami-700. The colour decision is
+ * the design's; the literals are not a decision, they are an un-tokenised value, so they are
+ * declared here — the one layer a colour may be declared in — instead of being repeated in a
+ * selector further down the chain.
+ *
+ * Why the chrome does NOT reuse --color-action-primary: ember is the single reserved accent and
+ * a view may spend it once (04_DESIGN_FOUNDATIONS §4). A persistent header CTA is present on
+ * every screen, so using ember there would burn the accent site-wide and leave the real in-page
+ * conversion action with nothing louder to say. Green is a second, quieter action register that
+ * belongs to the shell only. Contrast measured on --color-action-on-primary text:
+ * chrome-cta 6.3:1, chrome-cta-hover 7.9:1 (both AA at any size, AAA at large).
+ * ------------------------------------------------------------------------- */
+:root{
+	/* Primitive — erva (the shell's tatami green; since Session 10 also the "cool" Concept accent +
+	   the map/feedback greens). Light steps added for soft tints and dark-surface success text. */
+	--erva-100:#E7ECDD;--erva-200:#CBD6BA;--erva-300:#A7B98C;--erva-700:#50643B;--erva-800:#43542F;
+
+	/* Semantic — chrome (persistent shell: primary nav + header CTA) */
+	--color-chrome-nav:var(--tatami-700);
+	--color-chrome-nav-hover:var(--tatami-900);
+	--color-chrome-cta:var(--erva-700);
+	--color-chrome-cta-hover:var(--erva-800);
+	--color-chrome-on-cta:var(--tatami-50);
+
+	/* Semantic — scrim stops. The overlay shapes (Card --overlay, Hero --full-bleed) all darken
+	   photography with the same warm ink at three strengths; naming the stops keeps one mood
+	   across every component instead of each gradient inventing its own rgba(). */
+	/* --color-scrim-hint added 2026-09-03: the reference composition's photographic cards open
+	   their bottom-up gradient at a barely-there 5% rather than at fully transparent, which is what
+	   keeps the top of the photo from washing out next to the darkened bottom. The scale had a 0
+	   stop and a 0.34 stop and nothing between them. Same ink base as every other stop here - the
+	   reference expressed this one over rgba(36,28,19) and its right-hand wash over rgba(20,14,8);
+	   one base is used for both, so a card has a single scrim family instead of two. */
+	--color-scrim-hint:rgba(20,14,8,0.06);
+	--color-scrim-deep:rgba(20,14,8,0.82);
+	--color-scrim-mid:rgba(20,14,8,0.34);
+	--color-scrim-clear:rgba(20,14,8,0);
+  /* Modal backdrop. Same ink base as the scrim stops above, at the 0.55 alpha the design
+     source uses inline (Modal in _ds_bundle.js: background rgba(20,14,8,0.55)); tokenised here
+     rather than hardcoded in css/components/modal.css, per rule 4. */
+  --color-scrim-veil:rgba(20,14,8,0.55);
+}

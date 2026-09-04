@@ -1,0 +1,58 @@
+/* TMK Location page - composition-only layer for the master Location template (inc/location-render.php).
+   Direct translation of pages/LocationRimini.jsx's own layout wrapper: the Hero is full-bleed
+   (rendered outside this column), then every section stacks in one centred content column on the
+   cream stage with the structured vertical rhythm the canonical page uses. No component styling
+   lives here - only how the Terminal template's sections are placed, exactly as css/pages/ is meant
+   to be used (a page that needs component styling means it should have been a component).
+
+   This is also the file css/components/practical-info-band.css asks for: it supplies the section
+   headings the bands need for a correct document outline. Most are visually hidden (.tmk-sr-only)
+   because the design shows no visible band title there; the Menu and Nearby sections carry a real,
+   visible eyebrow heading, matching the prototype's <Eyebrow> beats. */
+
+.tmk-location{
+	max-width:calc(var(--container-page) + 2 * var(--page-gutter));
+	margin:0 auto;
+	display:grid;
+	grid-template-columns:minmax(0,1fr);
+	gap:var(--tmk-rhythm-structured);
+	padding-block:var(--hero-to-breadcrumb) var(--space-7);
+	padding-inline:var(--page-gutter);
+}
+
+.tmk-location__band{width:100%}
+
+/* ORIENTATION - narrative + gallery as an asymmetric editorial beat that collapses to one column
+   on narrow viewports (the canonical page's atmosphere rhythm). */
+.tmk-location__atmosphere{
+	display:grid;
+	grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+	gap:var(--space-7);
+	align-items:center;
+}
+
+/* Section eyebrow heading - verbatim from the prototype's Eyebrow (uppercase caption, ember accent),
+   authored here so it does not depend on base's <h2> display styling. */
+.tmk-location__eyebrow{
+	margin:0 0 var(--space-5);
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-action-primary);
+}
+
+/* CONTENT - the menu preview is an in-page anchor target for the hero's "Scopri il menu" link, so
+   it clears the sticky shell chrome when jumped to (matches the prototype's scrollMarginTop:132px). */
+.tmk-location__menu{scroll-margin-top:132px}
+.tmk-location__menu-more{margin:var(--space-6) 0 0}
+
+.tmk-location__nearby .tmk-card-grid{margin-top:0}
+
+/* Session 9 — Elementor Theme Builder Single for `location`. The template's content column is a
+   full-width Elementor Container carrying this class; it re-creates the centred content stage the
+   old .tmk-location wrapper provided (max-width + centring), while the vertical rhythm and inline
+   padding come from the container's own Elementor gap/padding controls (editable in the builder).
+   Kept minimal so it never fights Elementor's per-element CSS. */
+.tmk-tb-location-col{max-width:calc(var(--container-page) + 2 * var(--page-gutter));margin-inline:auto}

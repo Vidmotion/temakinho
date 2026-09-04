@@ -1,0 +1,65 @@
+/* --container-body / --body-inset, non --container-page / --page-gutter (2026-09-04):
+   la colonna di contenuto delle pagine interne va sulla griglia della Home (1120 centrati,
+   160px di margine a 1440) - vedi css/tokens/layout.css. Header e footer restano su
+   --container-page, come sulla Home. */
+/* TMK Editorial Article — composition-only layer for the Terminal editorial template
+   (inc/story-render.php tmk_render_article). Direct translation of pages/EditorialArticle.jsx:
+   a full-width lead image, then a narrow (var(--container-narrow)) reading column in Basis
+   Grotesque, with Londrina reserved for the hero headline and pull quotes. The body is post_content
+   so editors compose the piece with normal blocks; the rules below style those primitives — prose,
+   headings, blockquote-as-pull-quote, and .alignfull figures that break the column. */
+
+.tmk-article{padding-bottom:var(--space-9)}
+
+/* ARRIVAL — full-width lead photograph. */
+.tmk-article__hero-media img{display:block;width:100%;height:clamp(360px,62vh,640px);object-fit:cover}
+
+/* HEADER — kicker, Londrina headline, standfirst, byline, in the reading column. */
+.tmk-article__header{max-width:calc(var(--container-narrow) + 2 * var(--page-gutter));margin:0 auto;padding-block:var(--space-7) 0;padding-inline:var(--page-gutter)}
+.tmk-article__kicker{margin:var(--space-5) 0 var(--space-3);font-family:var(--font-structure);font-weight:var(--weight-structure-bold);font-size:var(--text-caption);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-action-primary-on-light)}
+.tmk-article__title{margin:0 0 var(--space-5);font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-display);line-height:0.95;color:var(--color-text-primary);text-wrap:balance}
+.tmk-article__standfirst{margin:0 0 var(--space-4);font-family:var(--font-structure);font-weight:var(--weight-structure-medium);font-size:var(--text-h3);line-height:1.4;color:var(--color-text-secondary);text-wrap:pretty}
+/* BYLINE — the META register, not the LABEL register (client review, task 3).
+   It used to be uppercase at --tracking-caps, i.e. byline, kicker and eyebrow were all typeset
+   identically: three different levels of the page rendered as one. A byline is a line of PROSE
+   ("di Beatriz Costa · 18/07/2026"), so it takes .tmk-meta's treatment - caption size, structure
+   400, sentence case, meta leading. The kicker directly above it KEEPS the caps register, which
+   is what now separates them.
+   This rule reaches the LIVE template as well as this (dormant) shortcode path: Elementor puts
+   _css_classes on the widget WRAPPER, and text-transform / letter-spacing / color inherit down
+   into the <p> inside it - so template #560's byline was being uppercased from here too. */
+.tmk-article__byline{margin:0;font-family:var(--font-structure);font-weight:var(--weight-structure);font-size:var(--text-caption);line-height:var(--leading-meta);letter-spacing:normal;text-transform:none;color:var(--color-text-secondary)}
+
+/* BODY — the reading column. */
+.tmk-article__body{max-width:calc(var(--container-narrow) + 2 * var(--page-gutter));margin:var(--space-8) auto 0;padding-inline:var(--page-gutter)}
+.tmk-article__body > :first-child{margin-top:0}
+.tmk-article__body p{margin:0 0 var(--space-5);font-family:var(--font-structure);font-weight:var(--weight-structure);font-size:var(--text-lead);line-height:var(--leading-prose);color:var(--color-text-primary);text-wrap:pretty}
+/* Lead paragraph — larger, per the source's INTRODUCTION beat. */
+.tmk-article__body > p:first-of-type{font-size:var(--text-h3);line-height:1.5;font-weight:var(--weight-structure-medium)}
+.tmk-article__body h2,.tmk-article__body h3{font-family:var(--font-voice);font-weight:var(--weight-voice);color:var(--color-text-primary);line-height:1.05;margin:var(--space-7) 0 var(--space-4)}
+.tmk-article__body h2{font-size:var(--text-h2)}
+.tmk-article__body h3{font-size:var(--text-h3)}
+.tmk-article__body ul,.tmk-article__body ol{margin:0 0 var(--space-5);padding-left:1.2em}
+.tmk-article__body li{font-family:var(--font-structure);font-size:var(--text-lead);line-height:var(--leading-prose);color:var(--color-text-primary);margin-bottom:var(--space-2)}
+.tmk-article__body a{color:var(--color-action-primary-on-light);text-underline-offset:2px}
+
+/* PULL QUOTE — a blockquote in the body renders as the Londrina pull quote (the source's QUOTE beat). */
+.tmk-article__body blockquote{
+	margin:var(--space-8) 0;padding:0 0 0 var(--space-6);
+	border-left:3px solid var(--color-action-primary);
+	font-family:var(--font-voice);font-weight:var(--weight-voice-soft);font-size:var(--text-h2);line-height:1.15;
+	color:var(--color-text-primary);text-wrap:balance;
+}
+.tmk-article__body blockquote p{margin:0 0 var(--space-2);font:inherit;color:inherit}
+.tmk-article__body blockquote cite{display:block;margin-top:var(--space-3);font-family:var(--font-structure);font-style:normal;font-weight:var(--weight-structure-bold);font-size:var(--text-caption);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-text-secondary)}
+
+/* IMMERSIVE PHOTOGRAPHY — a figure with .alignfull breaks the reading column edge-to-edge. */
+.tmk-article__body figure{margin:var(--space-8) 0}
+.tmk-article__body figure img{display:block;width:100%;height:auto;border-radius:var(--radius-soft)}
+.tmk-article__body .alignfull{width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}
+.tmk-article__body .alignfull img{height:clamp(320px,52vh,560px);object-fit:cover;border-radius:0}
+
+/* Illustration accent + related bridge. */
+.tmk-article__motif{display:grid;place-items:center;max-width:calc(var(--container-narrow) + 2 * var(--page-gutter));margin:0 auto;padding-inline:var(--page-gutter)}
+.tmk-article__motif img{width:120px;height:auto;margin-top:var(--space-6);opacity:0.9}
+.tmk-article__related{max-width:calc(var(--container-body) + 2 * var(--page-gutter));margin:var(--space-8) auto 0;padding-inline:var(--page-gutter)}

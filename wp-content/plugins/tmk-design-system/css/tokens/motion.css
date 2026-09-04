@@ -1,0 +1,13 @@
+/* TMK motion — motion narrates, never decorates. Three duration roles + named easings.
+   Reduced-motion equivalent is part of the token, not a patch (04 §12). */
+:root{
+  --motion-feedback:120ms;
+  --motion-transition:240ms;
+  --motion-narrative:480ms;
+  --ease-out:cubic-bezier(0.16,1,0.3,1);
+  --ease-in-out:cubic-bezier(0.65,0,0.35,1);
+}
+@media (prefers-reduced-motion:reduce){
+  :root{--motion-feedback:0ms;--motion-transition:0ms;--motion-narrative:0ms}
+  *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}
+}

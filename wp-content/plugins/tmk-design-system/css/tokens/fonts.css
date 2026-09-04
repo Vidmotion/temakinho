@@ -1,0 +1,48 @@
+/* TMK — webfonts. Voice face: Londrina Solid (official). Structure face: Basis Grotesque Arabic Pro
+   (official, v1.0 integration). Relative to this file's location (css/tokens/fonts.css) ->
+   ../../assets/fonts/ resolves to the plugin's assets/fonts/ folder.
+
+   Each @font-face lists WOFF2 first (native browser compression, ~25% of the TTF's size) with
+   the original TTF as a fallback src for any engine that can't parse WOFF2 — effectively none
+   of this project's real targets, but the fallback costs nothing and removes any risk.
+
+   ASSET INTEGRITY NOTE (checked 2026-07-28, corrected 2026-07-29): three of the five Basis
+   Grotesque Arabic Pro TTFs — Regular, Light, Medium — were byte-truncated when originally
+   pulled into this project: their table directory pointed ~1.3-1.7KB past the actual file
+   length, corrupting the tail of the GPOS (kerning) table and losing the trailing FFTM table.
+   CORRECTION: this was misdiagnosed as a Claude Design source-asset defect. The actual cause is
+   a 192KB decoded-size cap on this project's file-retrieval tool (DesignSync get_file, capped
+   at 256KB of base64 — i.e. 192KB of real bytes), which silently returns partial content unless
+   its own `truncated` flag is checked. It was not checked here; a "confirming" re-fetch used the
+   same capped call and naturally matched. The true, complete font files most likely exist intact
+   in Claude Design and were simply never fully retrieved. Repaired locally in the meantime by
+   dropping only the two provably-truncated tables (GPOS, FFTM) and re-saving — no glyph, metric,
+   or hinting data was invented or altered; glyph outlines, metrics, cmap, name and OS/2 were all
+   fully intact. Net effect: these three weights lose fine OpenType kerning pairs until the
+   complete original files are obtained (letter-spacing/advance-width via hmtx is unaffected).
+   Replace these three files with true complete originals and re-run the WOFF2 generation step
+   the moment they're available — do not re-attempt via get_file without checking `truncated`.
+
+   WEIGHT DISCIPLINE — only request the weights below; every other numeric weight has no
+   matching @font-face and will trigger the browser's synthetic-bold, which looks wrong on both
+   faces. Per Claude Design's own type guidelines (guidelines/type-voice.html,
+   type-structure.html):
+     Voice (Londrina Solid):    900 common (titles) · 400 common (accents) · 300 rare
+                                (100 Thin is shipped but not used by current design guidance)
+     Structure (Basis Grotesque): 400 / 500 / 700 — the three in active use
+   Tokens for the sanctioned weights live in tokens/typography.css (--weight-voice,
+   --weight-voice-soft, --weight-structure, --weight-structure-medium, --weight-structure-bold).
+
+   NO ITALIC REGISTER — neither face ships an italic/oblique variant, and neither Claude Design
+   guideline calls for one; this system has no italic role. Never set font-style: italic on
+   --font-voice/--font-structure — without a matching @font-face the browser fakes a slant
+   (synthetic oblique), which reads as broken on a display slab face and a corporate grotesque. */
+@font-face{font-family:'Londrina Solid';src:url('../../assets/fonts/LondrinaSolid-Thin.woff2') format('woff2'),url('../../assets/fonts/LondrinaSolid-Thin.ttf') format('truetype');font-weight:100;font-style:normal;font-display:swap}
+@font-face{font-family:'Londrina Solid';src:url('../../assets/fonts/LondrinaSolid-Light.woff2') format('woff2'),url('../../assets/fonts/LondrinaSolid-Light.ttf') format('truetype');font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:'Londrina Solid';src:url('../../assets/fonts/LondrinaSolid-Regular.woff2') format('woff2'),url('../../assets/fonts/LondrinaSolid-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Londrina Solid';src:url('../../assets/fonts/LondrinaSolid-Black.woff2') format('woff2'),url('../../assets/fonts/LondrinaSolid-Black.ttf') format('truetype');font-weight:900;font-style:normal;font-display:swap}
+@font-face{font-family:'Basis Grotesque';src:url('../../assets/fonts/BasisGrotesqueArabicPro-Light.woff2') format('woff2'),url('../../assets/fonts/BasisGrotesqueArabicPro-Light.ttf') format('truetype');font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:'Basis Grotesque';src:url('../../assets/fonts/BasisGrotesqueArabicPro-Regular.woff2') format('woff2'),url('../../assets/fonts/BasisGrotesqueArabicPro-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Basis Grotesque';src:url('../../assets/fonts/BasisGrotesqueArabicPro-Medium.woff2') format('woff2'),url('../../assets/fonts/BasisGrotesqueArabicPro-Medium.ttf') format('truetype');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Basis Grotesque';src:url('../../assets/fonts/BasisGrotesqueArabicPro-Bold.woff2') format('woff2'),url('../../assets/fonts/BasisGrotesqueArabicPro-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Basis Grotesque';src:url('../../assets/fonts/BasisGrotesqueArabicPro-Black.woff2') format('woff2'),url('../../assets/fonts/BasisGrotesqueArabicPro-Black.ttf') format('truetype');font-weight:900;font-style:normal;font-display:swap}

@@ -1,0 +1,14 @@
+/* TMK Breadcrumb - direct translation of components/navigation/Breadcrumb.jsx.
+   Derived hierarchy trail; the current page is text with aria-current, never a link.
+   TOKEN NOTE: the source sets the current crumb to fontWeight 600, a step the type system does
+   not define (tokens/typography.css has 400 / 500-medium / 700-bold and fonts.css only ships
+   those faces). 600 would be synthesised by the browser, which is exactly the failure mode
+   css/base/base.css already documents for italics, so the nearest real step is used instead.
+   The letter-spacing 0.03em is likewise the source's own value with no token behind it - it is
+   NOT --tracking-caps (0.08em), which is for uppercase, and this trail is sentence case. */
+.tmk-breadcrumb__list{list-style:none;display:flex;flex-wrap:wrap;gap:var(--space-2);margin:0;padding:0;font-family:var(--font-structure);font-size:var(--text-caption);line-height:var(--leading-meta);letter-spacing:0.03em}
+.tmk-breadcrumb__item{display:flex;gap:var(--space-2);align-items:center}
+.tmk-breadcrumb__item a{color:var(--color-text-secondary)}
+.tmk-breadcrumb__item a:hover{color:var(--color-text-primary)}
+.tmk-breadcrumb__current{color:var(--color-text-primary);font-weight:var(--weight-structure-bold)}
+.tmk-breadcrumb__sep{color:var(--color-border-strong)}

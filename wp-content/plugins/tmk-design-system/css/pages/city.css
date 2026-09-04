@@ -1,0 +1,60 @@
+/* --container-body / --body-inset, non --container-page / --page-gutter (2026-09-04):
+   la colonna di contenuto delle pagine interne va sulla griglia della Home (1120 centrati,
+   160px di margine a 1440) - vedi css/tokens/layout.css. Header e footer restano su
+   --container-page, come sulla Home. */
+/* TMK City page — composition-only layer for the master City / Collection template
+   (inc/city-render.php). Direct translation of pages/CityMilano.jsx's own layout wrapper: the Hero
+   is full-bleed (rendered outside this column), then every section stacks in one centred content
+   column on the cream stage with the structured vertical rhythm the canonical page uses. No
+   component styling lives here — only how the Collection template's sections are placed, exactly as
+   css/pages/ is meant to be used. Deliberately mirrors css/pages/location.css so the City (Depth 1)
+   and Location (Depth 2) pages share one spatial grammar — the bridge the blueprint calls for. */
+
+.tmk-city{
+	max-width:calc(var(--container-page) + 2 * var(--page-gutter));
+	margin:0 auto;
+	display:grid;
+	grid-template-columns:minmax(0,1fr);
+	gap:var(--tmk-rhythm-structured);
+	padding-block:var(--hero-to-breadcrumb) var(--space-7);
+	padding-inline:var(--body-inset);
+}
+
+.tmk-city__band{width:100%}
+
+/* ORIENTATION — the city intro beat is left-aligned editorial, collapsing to one column on narrow
+   viewports (the auto-fit grid CityMilano.jsx wraps its NarrativeBand in). */
+.tmk-city__orientation{
+	display:grid;
+	grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+	gap:var(--space-7);
+	align-items:center;
+}
+
+/* Section eyebrow heading — verbatim from the prototype's Eyebrow (uppercase caption, ember accent),
+   authored here so it does not depend on base's <h2> display styling. Matches .tmk-location__eyebrow. */
+.tmk-city__eyebrow{
+	margin:0 0 var(--space-5);
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-action-primary);
+}
+
+/* CONTENT — the Collection is the in-page anchor target for the hero's "Scopri i ristoranti" link,
+   so it clears the sticky shell chrome when jumped to (matches the Location page's #menu behaviour). */
+.tmk-city__collection{scroll-margin-top:132px}
+
+
+/* ── /ristoranti/ (archivio location), QA visiva 2026-09-04 ────────────────────────────────
+   L'indice apriva con un H1 centrato e solo su una grande area crema: nessun occhiello, nessun
+   contesto, e un asse (il centro) diverso da quello di tutto il resto del sito. Non si aggiunge
+   testo - non c'e' copy d'archivio per questa pagina e inventarlo e' escluso - ma il titolo
+   torna sull'asse di pagina come su ogni altra sezione, e lo spazio verticale sopra e sotto
+   rientra nella scala del ritmo invece di essere un vuoto. */
+body.post-type-archive-location .tmk-hero--minimal{
+	text-align:start;
+	padding-block:var(--tmk-rhythm-structured) var(--space-7);
+}

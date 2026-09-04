@@ -1,0 +1,116 @@
+# ==========================================================================
+# Contesto di build Docker — strategia allowlist
+#
+# L'ordine conta: in .dockerignore vince l'ULTIMA regola che corrisponde.
+# Struttura del file:
+#   1. deny list esplicita (documentazione + rete di sicurezza)
+#   2. `*` esclude tutto il resto
+#   3. riammissione del solo plugin custom
+#   4. esclusione dei file non-runtime dentro il plugin custom
+#
+# Risultato: nel contesto entra solo `wp-content/plugins/tmk-design-system/`,
+# quindi il build context resta di pochi MB anche se la root locale pesa
+# centinaia di MB (core WordPress, upload, plugin di terze parti).
+# ==========================================================================
+
+# --- 1. Deny list esplicita ----------------------------------------------
+
+# Git e metadati
+.git
+.gitignore
+.gitattributes
+.github
+.claude
+
+# Segreti e configurazioni locali
+.env
+.env.*
+wp-config.php
+wp-config-local.php
+wp-config-sample.php
+auth.json
+*.pem
+*.key
+*.p12
+
+# File dell'ambiente Local (Local by Flywheel)
+local-xdebuginfo.php
+local-phpinfo.php
+.__wtest
+.htaccess
+
+# Core WordPress locale (lo fornisce l'immagine ufficiale)
+wp-admin
+wp-includes
+index.php
+license.txt
+readme.html
+xmlrpc.php
+wp-activate.php
+wp-blog-header.php
+wp-comments-post.php
+wp-cron.php
+wp-links-opml.php
+wp-load.php
+wp-login.php
+wp-mail.php
+wp-settings.php
+wp-signup.php
+wp-trackback.php
+
+# Database e archivi
+*.sql
+*.sql.gz
+*.sqlite
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+
+# Runtime, contenuti, cache, log, backup, QA
+wp-content/uploads
+wp-content/cache
+wp-content/upgrade
+wp-content/upgrade-temp-backup
+wp-content/languages
+wp-content/ai1wm-backups
+wp-content/backup*
+**/*.log
+**/.DS_Store
+_BUILD
+_QA
+_ARCHIVE
+TMK OLD WEBSITE
+**/qa-screenshots
+**/screenshots
+node_modules
+.cache
+dist
+build
+
+# Plugin e temi non custom (Elementor, Elementor Pro, ACF, Brevo, WP Mail SMTP)
+wp-content/plugins
+wp-content/themes
+
+# Documenti e file di progetto: non servono dentro l'immagine
+TMK DOCUMENTS
+CLAUDE.md
+DEPLOYMENT.md
+docker-compose.yml
+.dockerignore
+
+# --- 2. Tutto il resto fuori ---------------------------------------------
+*
+
+# --- 3. Unica cosa che entra: il plugin custom ---------------------------
+!wp-content/plugins/tmk-design-system
+!wp-content/plugins/tmk-design-system/**
+
+# --- 4. Dentro il plugin custom, fuori cio' che non serve al runtime -----
+wp-content/plugins/tmk-design-system/**/.DS_Store
+wp-content/plugins/tmk-design-system/**/*.bak
+wp-content/plugins/tmk-design-system/**/*.bak-*
+wp-content/plugins/tmk-design-system/**/*.orig
+wp-content/plugins/tmk-design-system/**/*.log
+wp-content/plugins/tmk-design-system/PROJECT_CONTEXT.txt

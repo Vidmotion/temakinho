@@ -1,0 +1,35 @@
+/* TMK Trust Band — direct translation of components/conversion/TrustBand.jsx.
+   Surfaces sourced testimonials at decision-stage touchpoints; optionally rotating. */
+.tmk-trust-band{margin:0;text-align:center;max-width:680px;margin-inline:auto;padding:var(--space-6) 0}
+.tmk-trust-band__mark{font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:64px;line-height:0.5;color:var(--color-accent-concept-on-light)}
+.tmk-trust-band__quote{margin:var(--space-4) 0;font-family:var(--font-structure);font-size:var(--text-h3);line-height:1.35;font-weight:var(--weight-structure-medium);color:var(--color-text-primary)}
+.tmk-trust-band__caption{font-size:var(--text-caption);font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-text-secondary)}
+.tmk-trust-band__nav{display:flex;gap:var(--space-2);justify-content:center;margin-top:var(--space-4)}
+.tmk-trust-band__nav-btn{width:36px;height:36px;border-radius:var(--radius-pill);border:1.5px solid var(--color-border-strong);background:transparent;cursor:pointer;color:var(--color-text-primary);font-size:16px;line-height:1}
+.tmk-trust-band__count{align-self:center;font-size:var(--text-caption);color:var(--color-text-secondary)}
+.tmk-trust-band__item{display:none}
+.tmk-trust-band__item.is-active{display:block}
+
+/* --- Elementor interop -------------------------------------------------------------
+   Elementor's frontend.min.css ships, for its own Image widget:
+     .elementor .elementor-widget:not(.elementor-widget-text-editor)
+       :not(.elementor-widget-theme-post-content) figure{margin:0}
+   Specificity (0,4,1). This component's root is a semantic <figure> (figure +
+   blockquote + figcaption is the correct testimonial markup), so when it is rendered
+   through Elementor's Shortcode widget that rule silently defeated the margin-inline:auto
+   declared above: the band sat flush-left in its 1140px section instead of centred.
+   Re-assert the component's own declared intent at matching specificity (0,4,1) — the
+   TMK chain is enqueued at wp_enqueue_scripts priority 20, i.e. after frontend.min.css,
+   so an equal-specificity tie resolves in our favour (see inc/enqueue.php).
+   Do NOT 'fix' this by changing the <figure> root. --- */
+.elementor .elementor-widget .elementor-shortcode > figure.tmk-trust-band{margin-inline:auto}
+
+/* Client review (§6): on the LIVE widget path (no .elementor-shortcode wrapper - this is a
+   native tmk-trust widget calling tmk_render_trust_band() directly, not the shortcode above),
+   the same Elementor figure{margin:0} rule (0,4,1) still outranks the component's own base
+   margin-inline:auto (0,1,0) and was winning, leaving the box flush-left in its 1392px section
+   instead of centred - the box was off-axis even though the text WAS already correctly centred
+   *inside* it. Width, quote typography, mark and caption are untouched; only the box's own
+   position changes. !important because this fights Elementor core's own generic reset, the same
+   class of override already established for the hours-table zebra-stripe fix. */
+.elementor-widget-tmk-trust figure.tmk-trust-band{margin-inline:auto !important}

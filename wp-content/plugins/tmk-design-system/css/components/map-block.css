@@ -1,0 +1,50 @@
+/* TMK Map Block - direct translation of components/content/MapBlock.jsx.
+   Stylised location display, supplementary to the textual address (see inc/map-block-render.php).
+
+   COLOUR NOTE: the stylised map originally used the lagoa (teal) family for its ground + roads.
+   Session 10 brand compliance retinted it to the erva (green) family, the only cool accent the
+   site now uses (no teal anywhere). Same technique — a primitive composed to alpha stops with
+   color-mix(), declared in this layer, not raw literals in the markup. The pin uses the semantic
+   action token (--color-action-primary, ember/orange), unchanged. */
+.tmk-map-block{position:relative;aspect-ratio:4/3;min-height:200px;border-radius:var(--radius-soft);overflow:hidden;background:var(--erva-100)}
+.tmk-map-block__canvas{position:absolute;inset:0}
+.tmk-map-block__grid{stroke:color-mix(in srgb, var(--erva-700) 18%, transparent)}
+.tmk-map-block__road--major{stroke:color-mix(in srgb, var(--erva-700) 30%, transparent)}
+.tmk-map-block__road--minor{stroke:color-mix(in srgb, var(--erva-700) 22%, transparent)}
+.tmk-map-block__marker{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:var(--space-2)}
+.tmk-map-block__pin{stroke:var(--color-action-primary)}
+.tmk-map-block__label{background:var(--color-surface-raised);border-radius:var(--radius-pill);padding:5px 14px;font-size:var(--text-caption);font-weight:var(--weight-structure-bold);box-shadow:var(--elevation-raised);color:var(--color-text-primary)}
+.tmk-map-block__dot{position:absolute;transform:translate(-50%,-100%);line-height:0}
+.tmk-map-block__dot svg{fill:var(--ember-500);stroke:var(--tatami-50);stroke-width:1.5}
+
+/* ---------------------------------------------------------------------------
+   REAL MAP EMBED (2026-09-02) - inc/map-block-render.php :: tmk_render_map_embed()
+
+   Replaces the decorative .tmk-map-block above on location pages only; that component and its
+   rules are untouched because inc/event-render.php still renders it.
+
+   WIDTH. The old drawing sat in the practical-info card's SECOND GRID COLUMN - at 1440 that is
+   633px of a 1361px card, measured. Half a card is enough room for a drawing and not enough for
+   a map you are expected to read street names on, so the embed spans every track instead
+   (1/-1). The facts then stack above it at full width, which is also what the card's own
+   auto-fit grid does at <=1023 anyway.
+
+   HEIGHT. clamp() rather than aspect-ratio: an aspect ratio ties height to the container's
+   width, and the container just became full-bleed, so 4/3 would have produced a ~1000px tall
+   map at desktop. Measured results: 375 -> 300px (the floor), 768 -> 300px, 1024 -> 389px,
+   1440 -> 520px (the ceiling). The 300px floor is the point below which Google's own controls
+   (zoom buttons, fullscreen, the bottom attribution bar) start colliding with each other.
+
+   INTERACTION. The frame is overflow:hidden ONLY to clip the iframe to the card's radius;
+   nothing sits on top of the iframe, so drag-to-pan, scroll-to-zoom, the +/- controls and the
+   fullscreen button all reach it. No pointer-events trap, no overlay - the previous component
+   had nothing to interact with at all, so there was never an interaction bug to inherit. */
+.tmk-map-embed{grid-column:1/-1;display:grid;gap:var(--space-4)}
+.tmk-map-embed__frame{position:relative;width:100%;height:clamp(300px,36vw,520px);border-radius:var(--radius-soft);overflow:hidden;background:var(--erva-100);border:1px solid var(--color-border-default)}
+.tmk-map-embed__frame iframe{position:absolute;inset:0;display:block;width:100%;height:100%;border:0}
+.tmk-map-embed__actions{margin:0;display:flex;flex-wrap:wrap;gap:var(--space-3)}
+/* The map is the last thing in the card and the snake illustration is absolutely positioned
+   against that same card, at bottom:-16px - it would otherwise sit over the attribution bar and
+   the fullscreen control. The card's own overflow:clip keeps it from bleeding out; raising the
+   embed one stacking level keeps it from bleeding IN. */
+.tmk-map-embed{position:relative;z-index:1}

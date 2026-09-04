@@ -1,0 +1,189 @@
+/* TMK Practical Info Band - direct translation of components/bands/PracticalInfoBand.jsx.
+   Hospitality-framed facts on a raised card, with the Map Block as its second column.
+
+   The field labels are real <h3> elements (the source's own choice). A page placing this band
+   owes it an <h2> so the outline does not skip a level - css/pages/location.css does that with a
+   visually hidden heading, the same technique the Homepage's city bands use.
+
+   MARKUP NOTE: the hours table's day cell is a <th scope="row">, not the source's <td>. A table
+   whose first column is a label and second a value has row headers by definition; without the
+   scope a screen reader reads "Lun-Gio 19:00-23:30" as two unrelated cells. Nothing visual
+   changes - the cell is restyled to the source's exact weight and colour below. */
+/* Client review: "reads flat and unimportant" - sunken surface (not raised-on-cream, which read
+   as plain white on cream) + a primary-accent top edge for presence; a real type hierarchy
+   distinguishing address (the primary fact) / hours (structured list) / phone+email (CTA-styled,
+   actionable) instead of one weight and size for all four. Token references only. */
+/* DUE COLONNE, DICHIARATE. Prima era `repeat(auto-fit, minmax(260px,1fr))`: su una colonna da
+   1376px con 32px di gap auto-fit genera QUATTRO tracce da 304px, non due. I fatti finivano
+   nella prima traccia da 304px - da cui gli orari che andavano a capo in mezzo a un intervallo -
+   con tre quarti di riga vuoti a destra, e la mappa, non entrandoci, scendeva su una riga tutta
+   sua a 1312px: una striscia enorme sotto un blocchetto compresso. Misurato, non dedotto:
+   grid-template-columns valeva `304px 304px 304px 304px`.
+   Ora sono due tracce esplicite in proporzione 1 : 1.35 - i dati sono brevi e verticali, la
+   mappa e' un'immagine e vuole larghezza - e la mappa sta ACCANTO ai dati, non sotto.
+   Il risultato e' una scheda informativa, che e' quello che questo blocco deve essere. */
+.tmk-practical-info{
+	display:grid;
+	grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);
+	align-items:start;
+	gap:clamp(var(--space-6),3vw,var(--space-8));
+	background:var(--color-surface-sunken);
+	border-top:3px solid var(--color-action-primary);
+	border-radius:var(--radius-media);
+	padding:clamp(var(--space-6),2.6vw,var(--space-8));
+}
+/* Ambient decoration, relocated here for location pages only (client review §7). Same reasoning
+   as the carousel's local decor (css/components/gallery.css): a page-percentage position drifts
+   over text on pages of different lengths; a position measured against this card's own box can't.
+   Same opacity/pointer-events/z-index contract as the sitewide piece. overflow:clip keeps the
+   off-edge bleed from disturbing the card's own rounded corner. */
+.tmk-practical-info--decorated{position:relative;overflow:clip}
+/* THE DEAD LEFT COLUMN (client review round 4, §4). inc/practical-info-render.php wraps the
+   ambient snake in `<span aria-hidden="true">…</span>` as the card's FIRST child - and this
+   card is a grid, so that span was a full GRID ITEM. Its only content is position:absolute, so
+   it contributed nothing and occupied everything: with three children instead of two, auto-fit
+   resolved to `416px 416px 416px 0px` at 1440 and the facts started at x=512 inside a card
+   whose own content box starts at x=64 - ~450px of empty track, exactly the gap that was
+   reported. display:contents removes the span from layout entirely without removing it from
+   the DOM; the illustration inside it is absolutely positioned, and its containing block is
+   .tmk-practical-info--decorated (position:relative) either way, so nothing about where the
+   snake sits changes. Two children -> two equal tracks, which is the design's own 50/50
+   facts/map split (re-measured and confirmed byte-identical in the _BUILD/142 session). */
+.tmk-practical-info>[aria-hidden="true"]{display:contents}
+.tmk-page-decor__snake--local{position:absolute;right:min(-30px,-2vw);bottom:-16px;width:clamp(140px,14vw,240px);height:auto;opacity:0.5;z-index:0;pointer-events:none}
+@media (max-width:599px){.tmk-page-decor__snake--local{display:none}}
+.tmk-practical-info__facts{display:grid;gap:var(--space-5);align-content:start}
+.tmk-practical-info__cell{display:grid;gap:var(--space-2);align-content:start}
+.tmk-practical-info__label{margin:0;font-family:var(--font-structure);font-size:var(--text-caption);font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-action-primary-on-light)}
+.tmk-practical-info__closed{color:var(--color-feedback-error);text-transform:none;letter-spacing:0}
+.tmk-practical-info__hours{border-collapse:collapse;font-size:var(--text-body-small);text-align:left}
+/* Hello Elementor's reset.css ships a generic `table tbody>tr:nth-child(odd)>td` zebra-stripe
+   (specificity 0,1,4) that a single-class override (0,1,1) loses to on element-count tie-break.
+   Chaining the band's own wrapper class here (0,2,1) beats it outright - no !important needed. */
+.tmk-practical-info .tmk-practical-info__hours td,.tmk-practical-info .tmk-practical-info__hours th{border:none;background:transparent}
+.tmk-practical-info__day{padding:2px var(--space-4) 2px 0;color:var(--color-text-secondary);font-weight:var(--weight-structure);white-space:nowrap}
+.tmk-practical-info__time{padding:2px 0;font-weight:var(--weight-structure-bold);color:var(--color-text-primary)}
+
+/* Address: the primary fact - one step up from hours/phone/email, medium weight. */
+.tmk-practical-info__address{font-size:var(--text-body)}
+.tmk-practical-info__address a{color:var(--color-text-primary);font-weight:var(--weight-structure-medium)}
+
+/* Phone + email: a design-system CTA chip, not a bare link - the CTA vocabulary's pill/soft
+   radius + padding + bordered fill, borrowed at the component layer (css/components/cta.css)
+   rather than uppercase/tracked, since that treatment belongs to action LABELS ("PRENOTA"),
+   not literal contact data - an ALL-CAPS phone number or email address is not a real CTA label. */
+.tmk-practical-info__phone,.tmk-practical-info__email{display:inline-flex;align-items:center;gap:var(--space-2);padding:8px 16px;width:fit-content;border-radius:var(--radius-soft);background:var(--color-surface-raised);border:1.5px solid var(--color-action-secondary);font-family:var(--font-structure);font-weight:var(--weight-structure-medium);font-size:var(--text-body-small);color:var(--color-text-primary);text-decoration:none;transition:background var(--motion-feedback) var(--ease-out)}
+.tmk-practical-info__phone:hover,.tmk-practical-info__email:hover{background:var(--color-surface)}
+
+.tmk-practical-info__note{margin:0;font-size:var(--text-body-small);color:var(--color-text-secondary)}
+
+/* ---------------------------------------------------------------------------
+   MOBILE (client review round 4, §7). Kit breakpoint after _BUILD/099: mobile <=767.
+
+   THE HOURS WRAP. The two-column table cannot hold a range pair at phone width. Measured at
+   390: the card's content box is 262px, the day column takes its intrinsic width (148px,
+   because .tmk-practical-info__day is white-space:nowrap) and leaves the value 114px - so
+   "12.00 - 15.00 | 19.00 - 24.00" (~190px at 14px bold) always wraps to two lines. WHERE it
+   wraps is then decided by whatever the day label happens to measure, which is why the break
+   lands between the ranges on Tierra ("Venerdì") but INSIDE one on Fuego ("12.00 - 15.30 |
+   17.30 -" / "23.30"), whose day label is the 5-character "Dalle" and therefore leaves a wider,
+   worse-fitting value column. Shrinking the type or the day column cannot fix this: the value
+   needs ~190px and the longest day label ("Dal Venerdì alla Domenica") needs most of the rest.
+   The cells are stacked instead, which gives the value the card's full width - measured 263px
+   at the narrowest tested viewport (375) against a ~190px string, so every one of the 14
+   restaurants' values now renders on ONE line and cannot break anywhere, let alone mid-range.
+   Deliberately NOT white-space:nowrap: that would trade a mid-range wrap for a horizontal
+   scroll on any viewport narrower than tested, and no-horizontal-scroll is the harder rule.
+   (Trade-off, stated rather than hidden: display:block on table parts drops the native table
+   role, so AT reads the pair as "Venerdì / 12.00 - 15.00 | 19.00 - 24.00" in DOM order instead
+   of as a row-header + cell. That reads correctly as a stacked list, and the alternative -
+   restoring role="table"/"rowheader"/"cell" - is markup, i.e. a plugin PHP change.)
+
+   HIERARCHY AND RHYTHM. Three levels instead of two: section label (caption, caps, ember) >
+   day (caption, secondary) > value (body-small, bold, ink). Spacing is one scale, read from
+   largest gap to smallest so the grouping is unambiguous: --space-6 between fact blocks,
+   --space-3 between day/value pairs, --space-1 inside a pair. The card's own inset steps down
+   one token (--space-6 -> --space-5), which is also what buys the value its full line.
+
+   THE MAP. At phone width the 4/3 crop collapsed onto its own 200px min-height floor (measured
+   267 x 200) and read as a letterbox strip under the facts. --ratio-hero-mobile is this system's
+   own portrait crop role for exactly this situation - the ratio a full-bleed visual takes when
+   the viewport is narrow - so the map is given presence with an existing token, not a new one. */
+/* The stack runs to 1023, not 767, because the constraint is the FACTS COLUMN's width, not the
+   phone. Measured: 375 -> 263px (one column), 768 -> 304px (the card is already two columns
+   there), 1024 -> 432px, 1440 -> 640px. Day label + value need ~148 + ~190 = ~338px side by
+   side, so 768 wraps exactly like 375 does and 1024 is the first width where the two-column
+   table genuinely fits. Confirmed by measurement at all four widths, before and after. */
+@media (max-width:1023px){
+	.tmk-practical-info__hours,
+	.tmk-practical-info__hours tbody,
+	.tmk-practical-info__hours tr,
+	.tmk-practical-info__hours th,
+	.tmk-practical-info__hours td{display:block;width:100%}
+	.tmk-practical-info__hours tr+tr{margin-top:var(--space-3)}
+	.tmk-practical-info__day{padding:0 0 var(--space-1);font-size:var(--text-caption);line-height:var(--leading-caption);white-space:normal}
+	.tmk-practical-info__time{padding:0}
+	.tmk-practical-info__time:empty{display:none}
+}
+/* Phone only: the inset step-down, the block rhythm, and the map's portrait crop. */
+@media (max-width:767px){
+	.tmk-practical-info{padding:var(--space-5);gap:var(--space-6)}
+	.tmk-practical-info__facts{gap:var(--space-6)}
+	.tmk-practical-info__cell{gap:var(--space-3)}
+	.tmk-practical-info .tmk-map-block{aspect-ratio:var(--ratio-hero-mobile)}
+}
+
+
+/* ── SCHEDA INFORMATIVA — la mappa e' la SECONDA COLONNA (rework 2026-09-04) ─────────────────
+   `grid-column:1/-1` in css/components/map-block.css e' corretto per l'uso originale del blocco
+   mappa (una fascia a tutta larghezza in fondo alla pagina evento) ed e' proprio cio' che, dentro
+   questa scheda, la buttava su una riga sua da 1301px sotto un blocchetto di dati da 535px.
+   Qui la si rimette in colonna 2. Il componente mappa non viene modificato: la sua regola resta
+   valida ovunque altro venga usato - e' questa scheda a dire come la vuole. */
+.tmk-practical-info > .tmk-map-embed,
+.tmk-practical-info > .tmk-map-block{
+	grid-column:2;
+	grid-row:1;
+	width:100%;
+	align-self:stretch;
+}
+/* Il frame prende un rapporto d'aspetto invece dell'altezza fissa in vw del componente: cosi'
+   cresce con la colonna e resta proporzionato a qualunque larghezza, con un minimo sotto il
+   quale una mappa smette di essere leggibile. */
+.tmk-practical-info .tmk-map-embed__frame{
+	height:auto;
+	aspect-ratio:4/3;
+	min-height:320px;
+	border-radius:var(--radius-media);
+}
+
+/* Sotto il tablet le due colonne si impilano: i dati restano sopra (sono la risposta alla
+   domanda "quando e dove"), la mappa sotto. */
+@media (max-width:1023px){
+	.tmk-practical-info{grid-template-columns:minmax(0,1fr)}
+	.tmk-practical-info > .tmk-map-embed,
+	.tmk-practical-info > .tmk-map-block{grid-column:1;grid-row:auto}
+	.tmk-practical-info .tmk-map-embed__frame{aspect-ratio:var(--ratio-hero-mobile);min-height:0}
+}
+
+
+/* ── QA visiva 2026-09-04 ────────────────────────────────────────────────────────────────── */
+
+/* 1. La colonna dei dati finiva ~215px prima del fondo della scheda: orari, indirizzo, telefono
+   ed email si impilavano in alto e sotto restava un vuoto che faceva sembrare la mappa
+   sproporzionata. Non e' la mappa a essere troppo grande - sono i dati a non occupare la loro
+   colonna. Distribuendoli sull'altezza la scheda si legge come una composizione a due colonne. */
+@media (min-width:1024px){
+	.tmk-practical-info > .tmk-practical-info__facts{
+		display:flex;flex-direction:column;justify-content:space-between;
+		min-height:100%;gap:var(--space-6);
+	}
+}
+
+/* 2. Il serpente ambientale veniva tagliato dal bordo della scheda con un taglio verticale netto
+   (overflow:clip), e un taglio dritto in mezzo a un disegno organico legge come un errore.
+   Dissolvenza sull'angolo: il pezzo esce dalla composizione invece di essere troncato. */
+.tmk-page-decor__snake--local{
+	-webkit-mask-image:radial-gradient(120% 120% at 20% 20%,#000 55%,transparent 92%);
+	        mask-image:radial-gradient(120% 120% at 20% 20%,#000 55%,transparent 92%);
+}

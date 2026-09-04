@@ -1,0 +1,493 @@
+/* --container-body / --body-inset, non --container-page / --page-gutter (2026-09-04):
+   la colonna di contenuto delle pagine interne va sulla griglia della Home (1120 centrati,
+   160px di margine a 1440) - vedi css/tokens/layout.css. Header e footer restano su
+   --container-page, come sulla Home. */
+/* TMK Menu Hub — page layer (pages/MenuHub.jsx).
+ *
+ * Page layer and not components/, because none of this is reusable: it is the composition of one
+ * page. Everything that IS reusable is consumed, not redeclared — Card's chip (.tmk-card__tag),
+ * the utilities' .tmk-sr-only, .tmk-collapse from the refinements layer, and tokens for every
+ * colour, size, rhythm and radius. No new custom property is declared globally; the single local
+ * knob below is scoped to .tmk-menu-hub.
+ *
+ * Deviations from the prototype, and why:
+ *  - the rail heading uses --text-h1, not --text-display. The prototype's category names were
+ *    5-6 letters ("Temaki", "Crudo"); the real published ones reach 20 ("LIQUORI E DISTILLATI"),
+ *    and --text-display (up to 76px) breaks a 280px rail mid-word. Same voice, one step down.
+ *  - dishes are a two-column priced list, not a 3-column card grid. 167 items in cards is a
+ *    warehouse; in two priced columns it is a menu. See inc/menu-render.php.
+ */
+
+.tmk-menu-hub{
+  /* Two measurements of the same sticky header, and they are NOT interchangeable.
+     js/pages/menu-hub.js publishes both.
+
+     --tmk-menu-chrome is its HEIGHT. Stable, changes only when the header itself resizes. It
+     answers "how much of the viewport can the header ever cover", which is what an anchor
+     landing and the ScrollSpy reading line need — a value that does not move while the navbar
+     tucks itself away, or the active category would flicker every time it did.
+
+     --tmk-menu-dock is its live BOTTOM EDGE in viewport coordinates, clamped at 0. It answers
+     "where exactly is the underside of the header right now", which is the only correct answer
+     for the category bar's sticky offset. The two differ by the entire height of the header for
+     as long as it is translated, and measurably they are not even the same shape: while the
+     navbar hides it simultaneously GROWS (.tmk-scrolled enlarges the logo), so its bottom edge
+     traced 90 → 99 → 0 rather than sliding monotonically. No height, and no on/off docked state,
+     can follow that curve; the edge itself can, so the edge is what is used.
+
+     96px is the no-JS default for both — between the header's 90px resting and 140px scrolled
+     heights, so a cold render is never grossly wrong in either direction. */
+  --tmk-menu-chrome:96px;
+  --tmk-menu-dock:var(--tmk-menu-chrome);
+
+  /* Distance from the viewport edge to this block's CONTENT box — published by menu-hub.js. It
+     is what lets the category bar bleed to full width while its content stays on the page's own
+     text axis, and it is measured rather than written as 100vw because 100vw includes a classic
+     scrollbar and would cost 15px of horizontal scroll on Windows. 0 without JS: the bar simply
+     stays boxed, which is exactly where it sits today. */
+  --tmk-menu-bleed:0px;
+
+  /* The category bar's own height. Declared here rather than measured so that scroll-margin-top
+     resolves correctly with JS off; the bar's min-height is set FROM this value, so the number
+     and the rendered box cannot drift apart. Arithmetic per breakpoint is at the rule itself. */
+  --tmk-menu-rail:51px;
+
+  /* Air between the docked bar and the section title that lands under it. */
+  --tmk-menu-lead:var(--space-4);
+
+  display:grid;
+  /* row-gap:0 and the rhythm re-expressed as margin-top below. The tools wrapper is dissolved
+     with display:contents (see the next block), which promotes four small controls to direct
+     children of this grid — a shared row-gap would then put 100px of air between the language
+     row and the search field. Margins on the two block-level children reproduce today's rhythm
+     exactly: grid margins do not collapse, so margin-top == the gap it replaces. */
+  row-gap:0;
+  width:100%;
+  /* ATTENZIONE: max-width e padding-inline:--body-inset NON vanno usati insieme, si sommano.
+     --body-inset contiene un 100%, e in una `padding-inline` il 100% si risolve sulla larghezza
+     del CONTENITORE, non su quella dell'elemento: con max-width 1184 il box finiva largo 1184
+     centrato a x=128 e poi si mangiava altri 160px di padding per lato, portando il contenuto a
+     x=288 - un secondo asse contro il 160 dell'hero della stessa pagina. Misurato, non dedotto.
+     Qui il cap resta quello largo (1504) e a decidere e' solo la corsia, come per .tmk-stack. */
+  max-width:calc(var(--container-page) + 2 * var(--page-gutter));
+  margin-inline:auto;
+  padding-block:var(--space-7) var(--tmk-rhythm-airy);
+  padding-inline:var(--body-inset);
+  box-sizing:border-box;
+}
+.tmk-menu-hub > .tmk-menu-empty,
+.tmk-menu-hub > .tmk-menu-spread{margin-top:var(--tmk-rhythm-airy)}
+
+/* ── Tools: language, search, count, category index ─────────────────────────────────────── */
+/* display:contents, and the reason is structural rather than cosmetic: a position:sticky element
+   is released at the bottom of its CONTAINING BLOCK, which is its parent's content box. This
+   wrapper is ~235px tall, so a sticky .tmk-menu-index inside it would unstick after 235px of
+   scroll. Dissolving the box hands .tmk-menu-index the hub itself — the full height of the menu —
+   as its containing block, with no markup change. The element carries no semantics, no
+   background and no border, so it has nothing to lose by having no box. */
+.tmk-menu-hub__tools{display:contents}
+
+.tmk-menu-lang{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+/* The language switch stays a pill. It is a CONTROL — two mutually exclusive states, chosen once
+   — and it reads correctly as a chip. The category index used to share this rule and that is
+   precisely why it read as a row of buttons rather than as navigation; it now has its own
+   treatment below. Keeping the two visually distinct is the point, not an oversight. */
+.tmk-menu-lang__opt{
+  display:inline-block;
+  padding:9px 18px;
+  border:1px solid var(--color-border-default);
+  border-radius:var(--radius-pill);
+  background:var(--color-surface-raised);
+  font-family:var(--font-structure);
+  font-weight:var(--weight-structure-bold);
+  font-size:var(--text-caption);
+  letter-spacing:var(--tracking-caps);
+  text-transform:uppercase;
+  color:var(--color-text-primary);
+  text-decoration:none;
+  transition:background var(--motion-feedback) var(--ease-out),border-color var(--motion-feedback) var(--ease-out),color var(--motion-feedback) var(--ease-out);
+}
+.tmk-menu-lang__opt:hover{background:var(--color-surface-sunken);border-color:var(--color-border-strong)}
+.tmk-menu-lang__opt.is-active{
+  background:var(--color-action-primary);
+  border-color:transparent;
+  color:var(--color-action-on-primary);
+}
+
+/* The tools no longer share a grid gap — display:contents above dissolved the box that carried
+   it — so each states its own leading margin. That is not merely a restoration of the old even
+   16px: the run reads better graded. The count is the search field's own readout, so it sits
+   close to it; the category bar is a different level of navigation, so it gets the widest gap in
+   the group. Trailing margins stay 0 throughout, one direction only, no collapsing to reason
+   about. */
+.tmk-menu-search{margin:var(--space-5) 0 0}
+.tmk-menu-search__input{
+  width:100%;
+  max-width:420px;
+  box-sizing:border-box;
+  padding:12px 16px;
+  border:1px solid var(--color-border-default);
+  border-radius:var(--radius-soft);
+  background:var(--color-surface-raised);
+  font-family:var(--font-structure);
+  font-size:var(--text-body-small);
+  color:var(--color-text-primary);
+}
+.tmk-menu-search__input::placeholder{color:var(--color-text-secondary);opacity:1}
+
+.tmk-menu-hub__count{
+  margin:var(--space-2) 0 0;
+  font-family:var(--font-structure);
+  font-size:var(--text-body-small);
+  line-height:var(--leading-body-small);
+  color:var(--color-text-secondary);
+}
+
+/* ── Category index: the site's SECOND level of navigation ──────────────────────────────────
+   Not a widget, not a card, not a thing that appears on scroll. It is a full-width band with the
+   navbar's own background and a single hairline under it, in flow from the first paint and
+   sticky from the first paint. Nothing changes width, nothing fades in, nothing is transformed.
+
+   THE WHOLE LIFECYCLE IS THIS ONE DECLARATION: top is the header's live underside, so the bar's
+   top edge and the header's bottom edge are the same number on every frame. There is no docked
+   state to enter, no threshold to cross, and therefore nothing that can fire early or late — the
+   two elements cannot drift apart because only one position is ever computed. While the bar is
+   still in flow, top has no visual effect at all, which is why no stuck-detection is needed to
+   suppress it; it simply meets the header and stops. An earlier revision animated a transform
+   toward a target that a ResizeObserver was rewriting every frame, and the resulting drift is
+   what put the bar behind the navbar.
+
+   z-index 8: above the section rails (also sticky, and later in document order, so they would
+   otherwise paint over it) and far below #tmk-header's 999, which must always win. */
+.tmk-menu-index{
+  position:sticky;
+  top:var(--tmk-menu-dock);
+  z-index:8;
+  margin-block-start:var(--space-6);
+
+  /* Full bleed out, content axis back in. The negative margin and the padding are the SAME
+     measured value, so they cancel: the band spans the viewport while the first category sits
+     exactly above the section rails and exactly below the search field. */
+  margin-inline:calc(-1 * var(--tmk-menu-bleed));
+  padding-inline:var(--tmk-menu-bleed);
+  scroll-padding-inline:var(--tmk-menu-bleed);
+
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:var(--space-1);
+  box-sizing:border-box;
+  min-height:var(--tmk-menu-rail);
+  padding-block:8px; /* 8 + 34 item + 8 + 1 border == --tmk-menu-rail 51px */
+
+  background:var(--color-surface);              /* the navbar's colour, to the byte */
+  border-bottom:1px solid var(--color-border-default);
+  /* No top border: docked, #tmk-header.tmk-scrolled already draws its own 1px baseline directly
+     above this element, and two hairlines 1px apart read as a seam. */
+
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  scrollbar-width:none;
+
+  /* Fade edges, with no JS and no state class, because the fade is exactly as wide as the page
+     gutter. Two consequences fall out of that single choice: at either end of the scroll the
+     fade zone contains no category (the first one starts at padding-inline == the fade width),
+     so nothing ever looks clipped at rest; and the band's own faded background always lands on
+     empty gutter rather than over page content passing behind it. Capped at --space-6 so the
+     desktop gutter (112px at 1440) does not produce an absurd fade. */
+  --tmk-menu-fade:min(var(--tmk-menu-bleed),var(--space-6));
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 var(--tmk-menu-fade),#000 calc(100% - var(--tmk-menu-fade)),transparent 100%);
+  mask-image:linear-gradient(to right,transparent 0,#000 var(--tmk-menu-fade),#000 calc(100% - var(--tmk-menu-fade)),transparent 100%);
+}
+/* No transition on this element, deliberately. It does not need to catch up with the header,
+   because it is never anywhere else: --tmk-menu-dock is sampled from the header itself, so the
+   bar is already at the right place in the frame the header moves. Adding an easing here would
+   introduce exactly the lag it looks like it is smoothing out. */
+.tmk-menu-index::-webkit-scrollbar{display:none}
+
+.tmk-menu-index__pill{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  padding:8px 12px;   /* 8 + 18 line + 8 == 34px */
+  border:0;
+  border-radius:var(--radius-soft);
+  background:transparent;
+  font-family:var(--font-structure);
+  font-weight:var(--weight-structure-bold);
+  font-size:var(--text-caption);
+  line-height:1.5;
+  letter-spacing:var(--tracking-caps);
+  text-transform:uppercase;
+  color:var(--color-text-secondary);
+  text-decoration:none;
+  white-space:nowrap;
+  transition:background-color var(--motion-feedback) var(--ease-out),color var(--motion-feedback) var(--ease-out);
+}
+.tmk-menu-index__pill:hover{background:var(--color-surface-sunken);color:var(--color-text-primary)}
+.tmk-menu-index__pill[aria-current]{background:var(--color-action-primary);color:var(--color-action-on-primary)}
+
+/* ── Empty state (client-side filter only; never rendered on a cold page) ───────────────── */
+.tmk-menu-empty{
+  margin:0;
+  display:grid;
+  gap:var(--space-2);
+  padding:var(--space-6);
+  border:1px dashed var(--color-border-default);
+  border-radius:var(--radius-soft);
+  background:var(--color-surface-raised);
+  text-align:center;
+}
+.tmk-menu-empty__title{
+  font-family:var(--font-voice);
+  font-weight:var(--weight-voice);
+  font-size:var(--text-h3);
+  color:var(--color-text-primary);
+}
+.tmk-menu-empty__copy{font-size:var(--text-body-small);color:var(--color-text-secondary)}
+
+/* ── The editorial spread: identity rail + priced list ──────────────────────────────────── */
+.tmk-menu-spread{
+  display:grid;
+  grid-template-columns:minmax(0,280px) minmax(0,1fr);
+  gap:var(--space-8);
+  align-items:start;
+  /* css/refinements/shell.css sets html{scroll-padding-top:var(--space-9)} site-wide, and
+     scroll-padding-top on the scroller and scroll-margin-top on the target ADD UP — so the
+     shell's 96px is subtracted back out here and the real requirement stated in full. That
+     requirement is now taller than the header alone: a jump has to clear the header AND the
+     category bar docked under it, or it parks the section title behind its own navigation.
+     menu-hub.js overrides this per click with a direction-aware offset (the navbar hides on the
+     way down and reveals on the way up, so the two directions genuinely need different numbers);
+     this value is what a no-JS render and a cold load with a #hash get, and it is the safe one. */
+  scroll-margin-top:calc(var(--tmk-menu-chrome) + var(--tmk-menu-rail) + var(--tmk-menu-lead) - var(--space-9));
+}
+/* The rail docks to the CATEGORY BAR, not to the navbar above it — deliberately, and it is the
+   offset the quick-nav lands on too, so a section title always sits level with the first dish of
+   its own list. Including --tmk-menu-chrome here instead looks correct only while the navbar is
+   on screen: the navbar hides itself on scroll-down, which is exactly the state a jump ends in,
+   and the rail would then hang 140px below the list it labels. The trade is that a revealed
+   navbar can overlay a stuck rail — but revealing it requires scrolling up, the navbar overlays
+   page content everywhere on this site already, and the category bar is showing the same section
+   name in its active pill throughout. No information is lost; alignment is gained. */
+.tmk-menu-spread__rail{
+  display:grid;
+  gap:var(--space-3);
+  align-content:start;
+  position:sticky;
+  top:calc(var(--tmk-menu-rail) + var(--tmk-menu-lead));
+}
+.tmk-menu-spread__count{
+  font-family:var(--font-structure);
+  font-weight:var(--weight-structure-bold);
+  font-size:var(--text-caption);
+  letter-spacing:var(--tracking-caps);
+  text-transform:uppercase;
+  color:var(--color-text-secondary);
+}
+.tmk-menu-spread__title{
+  margin:0;
+  font-family:var(--font-voice);
+  font-weight:var(--weight-voice);
+  font-size:var(--text-h1);
+  line-height:0.92;
+  letter-spacing:var(--tracking-voice);
+  color:var(--color-text-primary);
+}
+.tmk-menu-spread__rule{
+  display:block;
+  width:72px;
+  height:3px;
+  border-radius:var(--radius-pill);
+  background:var(--color-action-primary);
+}
+.tmk-menu-spread__body{display:grid;gap:var(--space-7);min-width:0}
+
+/* ── Sub-groups, exactly as published (ROLLS/TEMAKI families, DRINK's two lists) ────────── */
+.tmk-menu-group{display:grid;gap:var(--space-4);min-width:0}
+.tmk-menu-group__title{
+  margin:0;
+  font-family:var(--font-structure);
+  font-weight:var(--weight-structure-bold);
+  font-size:var(--text-caption);
+  letter-spacing:var(--tracking-caps);
+  text-transform:uppercase;
+  color:var(--color-action-primary-on-light);
+}
+
+/* ── Dishes ─────────────────────────────────────────────────────────────────────────────── */
+/* One column by default, two only once a column is wide enough to hold "GUACAMOLE CON PICO DE
+   GALLO" and its price without shredding either. Below 700px, and inside the 280px-rail layout
+   before the container widens, a second column costs more than it saves. */
+.tmk-menu-dishes{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  column-gap:var(--space-7);
+  row-gap:var(--space-5);
+}
+/* One breakpoint, not three.
+   The previous rule opened a second column at 700px, closed it again at 1024px and reopened it
+   at 1200px, on the theory that the 280px rail leaves too little room in between. Measured, the
+   opposite is true: the list is 616px wide at 1024px - the same width it already runs two
+   columns in at 1023px - so the band produced a single 616-791px column carrying 88 to 113
+   characters per line, and a visible layout jump exactly at the desktop breakpoint. Two columns
+   from 700px up keep every column between ~288px and ~450px, i.e. a 41-64 character measure at
+   every viewport, and the jump disappears. */
+@media (min-width:700px){
+  .tmk-menu-dishes{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.tmk-menu-dishes--single{grid-template-columns:minmax(0,1fr)}
+
+.tmk-menu-dish{display:grid;gap:6px;min-width:0}
+/* The description is the only long-form text in a dish, and between 600px and 699px the list is
+   still one column ~550px wide. Capping the measure there costs nothing at any other width, and
+   the name row stays full width so the dotted leader still reaches the price. In this typeface
+   1ch measures 0.71em while the average lowercase advance is 0.51em, so 47ch is the value that
+   lands on a ~66 character line - the unit stays font-relative, the number is measured. */
+.tmk-menu-dish__desc{max-width:47ch}
+.tmk-menu-dish__head{
+  margin:0;
+  display:flex;
+  align-items:baseline;
+  gap:var(--space-2);
+}
+.tmk-menu-dish__name{
+  font-family:var(--font-structure);
+  font-weight:var(--weight-structure-bold);
+  font-size:var(--text-body-small);
+  letter-spacing:0.02em;
+  text-transform:uppercase;
+  color:var(--color-text-primary);
+}
+/* The dotted leader of a printed a la carte. Decorative and aria-hidden; it also does the work
+   of pushing the price to the right edge, so no absolute positioning is needed. */
+.tmk-menu-dish__leader{
+  flex:1 1 auto;
+  /* No min-width: when a long dish name wraps, whatever space is left on the last line is a
+     few pixels, and a 24px dotted stub there reads as a mistake. Letting it collapse to nothing
+     means the leader appears only when it has room to mean something. */
+  min-width:0;
+  align-self:end;
+  height:1px;
+  margin-bottom:4px;
+  border-bottom:1px dotted var(--color-border-default);
+}
+.tmk-menu-dish__price{
+  flex:0 0 auto;
+  font-family:var(--font-structure);
+  font-weight:var(--weight-structure-bold);
+  font-size:var(--text-body-small);
+  color:var(--color-text-primary);
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.tmk-menu-dish__desc{
+  margin:0;
+  font-size:var(--text-body-small);
+  line-height:var(--leading-body-small);
+  color:var(--color-text-secondary);
+}
+.tmk-menu-dish__allergens{
+  margin:0;
+  font-family:var(--font-structure);
+  font-size:var(--text-caption);
+  line-height:var(--leading-caption);
+  color:var(--color-text-secondary);
+  font-variant-numeric:tabular-nums;
+}
+.tmk-menu-dish .tmk-card__tags{margin:0}
+
+/* ── Info & allergeni ───────────────────────────────────────────────────────────────────── */
+.tmk-menu-note{
+  margin:0;
+  font-size:var(--text-body-small);
+  line-height:var(--leading-body-small);
+  color:var(--color-text-secondary);
+}
+.tmk-menu-note--fine{font-size:var(--text-caption);line-height:var(--leading-caption)}
+.tmk-menu-legend{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:var(--space-2) var(--space-5);
+}
+.tmk-menu-legend__item{display:flex;align-items:baseline;gap:var(--space-2)}
+.tmk-menu-legend__num{
+  flex:0 0 1.6em;
+  font-family:var(--font-structure);
+  font-weight:var(--weight-structure-bold);
+  font-size:var(--text-caption);
+  color:var(--color-action-primary-on-light);
+  font-variant-numeric:tabular-nums;
+}
+.tmk-menu-legend__name{
+  font-family:var(--font-structure);
+  font-size:var(--text-caption);
+  letter-spacing:var(--tracking-caps);
+  text-transform:uppercase;
+  color:var(--color-text-secondary);
+}
+
+/* ── Responsive. Breakpoints are the system's own: --bp-desktop 1024, --bp-tablet 600, and the
+      Elementor pair 1023/599 that PROJECT_CONTEXT 15 aligned everything to. ──────────────── */
+@media (max-width:1023px){
+  /* Il gutter orizzontale resta --page-gutter a ogni breakpoint: e' la griglia condivisa da
+     header, hero, contenuto e footer (tokens/layout.css). Prima questa riga lo riportava a
+     --space-5 (24px) sotto i 1024 e a --space-4 (16px) sotto i 600, residuo del sistema
+     precedente: misurato col browser, il contenuto del Menu partiva da 24px a 768 e da 16px a
+     390 mentre header e footer stavano a 32. Cambia solo il ritmo VERTICALE per tier. */
+  .tmk-menu-hub{padding-block:var(--space-6) var(--tmk-rhythm-structured);padding-inline:var(--body-inset)}
+  .tmk-menu-spread{grid-template-columns:minmax(0,1fr);gap:var(--space-5)}
+  /* The rail unsticks here, so the section title scrolls away with its own dishes. The bar's
+     own top offset still uses --tmk-menu-rail, which is why it is re-declared per tier. */
+  .tmk-menu-spread__rail{position:static;top:auto}
+
+  /* Tablet: the same bar, tightened. Spacing comes down before type does — shrinking 12px caps
+     any further would cost legibility long before it saves a useful number of pixels. */
+  .tmk-menu-hub{--tmk-menu-rail:47px}
+  .tmk-menu-index{padding-block:7px}          /* 7 + 32 + 7 + 1 == 47 */
+  .tmk-menu-index__pill{padding:7px 11px}     /* 7 + 18 + 7 == 32 */
+}
+@media (max-width:599px){
+  .tmk-menu-hub{padding-block:var(--space-5) var(--tmk-rhythm-structured);padding-inline:var(--body-inset)}
+  .tmk-menu-dishes{row-gap:var(--space-4)}
+  .tmk-menu-legend{grid-template-columns:minmax(0,1fr)}
+  .tmk-menu-lang__opt{padding:8px 14px}
+  /* Phone: the same graded rhythm, one step down. Vertical space above the fold is the scarcest
+     thing on this page — the category bar has to be reachable without scrolling past a toolbar. */
+  .tmk-menu-search{margin-top:var(--space-4)}
+  .tmk-menu-index{margin-block-start:var(--space-5)}
+
+  /* Phone: 43px of chrome for the whole second navigation level, against the 335px the wrapped
+     grid used to cost at this width. The row scrolls horizontally under the thumb; 30px is above
+     WCAG 2.2 AA's 24px minimum target size (2.5.8), and the 2px gap plus the band's own padding
+     keep the real touch area taller than the painted one. */
+  .tmk-menu-hub{--tmk-menu-rail:43px}
+  .tmk-menu-index{padding-block:6px;gap:2px}  /* 6 + 30 + 6 + 1 == 43 */
+  .tmk-menu-index__pill{padding:6px 10px}     /* 6 + 18 + 6 == 30 */
+}
+@media (prefers-reduced-motion:reduce){
+  .tmk-menu-lang__opt,.tmk-menu-index__pill{transition:none}
+}
+
+/* ── The [hidden] guard ──────────────────────────────────────────────────────────────────────
+   Every block in this file is display:grid or display:flex, and a class-level display beats the
+   UA sheet's [hidden]{display:none} — so without this the text filter would hide nothing and the
+   empty state would be permanently on screen. Re-asserted here at attribute specificity, which
+   is one step above each rule it corrects, so no !important is needed. Kept local rather than
+   patched into css/base/base.css: the same hazard exists system-wide, but a global
+   [hidden]{display:none!important} is a base-layer decision and is logged in PROJECT_CONTEXT 19
+   as an observation instead of being smuggled in here. */
+.tmk-menu-hub [hidden],
+.tmk-menu-hub[hidden],
+.tmk-menu-empty[hidden],
+.tmk-menu-search[hidden],
+.tmk-menu-group[hidden],
+.tmk-menu-dish[hidden],
+.tmk-menu-spread[hidden]{display:none}

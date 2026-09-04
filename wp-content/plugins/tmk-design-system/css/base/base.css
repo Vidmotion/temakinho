@@ -1,0 +1,187 @@
+/* TMK base — layer 2 (base): element resets and default typography, consuming tokens only.
+   Never component- or page-specific. The governed neutral stage. */
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--color-surface);color:var(--color-text-primary);font-family:var(--font-structure);font-size:var(--text-body);line-height:var(--leading-body);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,h5,h6{margin:0;font-family:var(--font-voice);font-weight:var(--weight-voice);letter-spacing:var(--tracking-voice)}
+h1{font-size:var(--text-h1);line-height:var(--leading-h1)}
+h2{font-size:var(--text-h2);line-height:var(--leading-h2)}
+h3{font-size:var(--text-h3);line-height:var(--leading-h3)}
+h4{font-size:var(--text-h4);line-height:var(--leading-h4)}
+/* h5/h6 were unsized: base set Londrina Solid 900 on h1-h6 but only gave h1-h4 a step, so an
+   <h5> inherited the UA's 0.83em and rendered SMALLER than body copy in the display face -
+   the hierarchy inverted rather than continued. Both steps now sit above --text-body. */
+h5{font-size:var(--text-h5);line-height:var(--leading-h5)}
+h6{font-size:var(--text-h6);line-height:var(--leading-h6)}
+p{margin:0 0 var(--space-4)}
+a{color:var(--color-action-primary-on-light);text-decoration:none;transition:color var(--motion-feedback) var(--ease-out)}
+a:hover{color:var(--color-action-primary-on-light-hover);text-decoration:underline;text-underline-offset:3px}
+img{max-width:100%;display:block}
+/* L'attributo `hidden` deve vincere, e serve dirlo una volta.
+   La regola dello user agent e' `[hidden]{display:none}` a specificita' 0, quindi QUALSIASI
+   componente che dichiari un display su una classe la batte. Misurato sul form candidatura:
+   `.tmk-form{display:grid}` sopravviveva a `form.hidden = true`, e dopo un invio riuscito il
+   modulo compilato restava a schermo con il messaggio di successo sotto (trovato dalla QA
+   pre-lancio col browser; il pulsante era gia' disabilitato, quindi nessun doppio invio, ma la
+   schermata era sbagliata). Lo stesso valeva per qualunque futuro componente con un display di
+   classe: barre filtro, pannelli, righe collassabili.
+   `[hidden][hidden]` e' (0,2,0) e batte una regola a classe singola senza !important e senza
+   dipendere dall'ordine dei fogli. `until-found` resta escluso perche' quel valore deve poter
+   essere rivelato dalla ricerca nel browser. */
+[hidden]:not([hidden="until-found"]){display:none}
+[hidden][hidden]:not([hidden="until-found"]){display:none}
+button{font-family:inherit}
+::selection{background:var(--ember-200);color:var(--ink)}
+:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-ring-offset)}
+.tmk-eyebrow{font-family:var(--font-structure);font-size:var(--text-caption);font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-accent-concept-on-light)}
+/* Section eyebrow used as a real heading above a page band (the approved pages' <Eyebrow>: the
+   reserved ember accent as a foreground, caption scale, with a bottom step). Distinct from
+   .tmk-eyebrow, which is the muted per-component caption. Shared by every hub/collection page
+   (Story, Event, Careers, Shop, City) so their section labels are one treatment site-wide. */
+.tmk-section-eyebrow{margin:0 0 var(--space-5);font-family:var(--font-structure);font-size:var(--text-caption);font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-action-primary-on-light)}
+.tmk-display{font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-display);line-height:var(--leading-display);letter-spacing:var(--tracking-voice)}
+/* No italic register exists in this system (PROJECT_CONTEXT.md §7): neither Voice
+   (Londrina Solid) nor Structure (Basis Grotesque) ships an italic/oblique face, so any
+   font-style:italic is rendered as SYNTHETIC oblique and looks broken. Hello Elementor's
+   reset.css italicises figcaption; the UA stylesheet italicises cite/address/dfn/var.
+   Normalised here, in the base layer, so no component has to patch it locally.
+   (Caught on the Trust Band's figcaption during the Homepage audit.) */
+figcaption,cite,address,dfn,var{font-style:normal}
+/* Hello Elementor's reset.css ships a NEUTRAL-GREY table row hover
+     table tbody tr:hover>td, table tbody tr:hover>th { background-color:hsla(0,0%,50%,.102) }
+   - a literal 50%-grey wash with square corners, from outside this design system entirely
+   (no grey exists anywhere in tokens/colors.css; every neutral here is the warm tatami/ink
+   family). An earlier pass neutralised its zebra-stripe TWIN only, and only inside
+   .tmk-practical-info, leaving the hover on every other table site-wide. Removed here at the
+   base layer, where the rest of Hello's reset is already normalised, so it is gone everywhere
+   rather than per component. Same specificity as theirs (0,1,4); this stylesheet is enqueued
+   at priority 20 against the theme's 10, so the later sheet wins the tie - no !important.
+   A row hover is not a focus state: :focus-visible above is untouched. */
+table tbody tr:hover>td,table tbody tr:hover>th{background-color:transparent}
+
+/* ===========================================================================
+   TYPOGRAPHIC ROLES — the named hierarchy (client review, task 3).
+
+   The scale lived in tokens/typography.css and the two faces in tokens/fonts.css, but there was
+   no layer in between: every page re-spelled the same role by hand (a standfirst as
+   `font-family:var(--font-structure);font-size:var(--text-h4);line-height:1.5;color:...`, once
+   per page file, with the line-height drifting 1.4 / 1.5 / 1.6 / 1.7 between them). That drift is
+   what reads as "everything has the same weight" - the roles were never actually distinct, they
+   were nine near-copies of two declarations.
+
+   Ten roles, one place. Anything above the fold uses the VOICE face and carries weight; anything
+   read in sequence uses the STRUCTURE face; labels are the only caps register. Existing class
+   names are kept (.tmk-display, .tmk-eyebrow, .tmk-section-eyebrow above) - these are the ones
+   the system was missing, not a second naming scheme.
+
+   Contrast between adjacent roles is deliberate and measurable, not decorative:
+     display 48-76px voice/900   ->  h1 39-49px voice/900   ->  h2 31-39px voice/900
+     lead 20px structure/400 at 1.5   ->  body 16px structure/400 at 1.55
+     label 12px structure/700 caps 0.08em  ->  meta 12px structure/400
+   A title and its standfirst therefore differ in FACE, WEIGHT and SIZE at once, which is what
+   makes the subordination legible without shouting. */
+
+/* LEAD / STANDFIRST — the paragraph directly under a headline. Structure face at the lead step,
+   secondary colour: subordinate to the title, still clearly above body copy. */
+.tmk-lead{
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure);
+	font-size:var(--text-lead);
+	line-height:var(--leading-lead);
+	color:var(--color-text-secondary);
+	text-wrap:pretty;
+}
+/* BODY LARGE — the same step as the lead but in the primary ink, for long-form intro paragraphs
+   that are body copy rather than a subtitle. */
+.tmk-body-large{
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure);
+	font-size:var(--text-lead);
+	line-height:var(--leading-body);
+	color:var(--color-text-primary);
+	text-wrap:pretty;
+}
+/* META — byline, date, reading time, card meta. Caption size, structure face, NOT caps: it is a
+   line of prose, so it must not compete with .tmk-eyebrow, which is the label register. */
+.tmk-meta{
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure);
+	font-size:var(--text-caption);
+	line-height:var(--leading-meta);
+	color:var(--color-text-secondary);
+}
+/* TITLE ROLES as classes, for the many places where the correct heading LEVEL for the document
+   outline is not the correct SIZE (a visually-hidden h1 above a styled h2, a card <span> that
+   must look like a title). Size and semantics decoupled, one definition each. */
+.tmk-title-1{font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-h1);line-height:var(--leading-h1);letter-spacing:var(--tracking-voice)}
+.tmk-title-2{font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-h2);line-height:var(--leading-h2);letter-spacing:var(--tracking-voice)}
+.tmk-title-3{font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-h3);line-height:var(--leading-h3);letter-spacing:var(--tracking-voice)}
+
+/* SECTION TITLE — the band label as a real heading (client review, task 5: "una gerarchia
+   editoriale piu' forte").
+   Every hub page labelled its bands with .tmk-section-eyebrow: 12px, structure/700, uppercase,
+   ember. Correct as a micro-label, wrong as the only structural signal on a 1440px page — the
+   section label, the card eyebrow and the card action chip were all the SAME 12px caps register,
+   so nothing above the cards read as a level. The label keeps its words (no new copy) and moves
+   up a register: Voice face at the h2 step, in ink, with the ember reserved for the small rule
+   above it. .tmk-section-eyebrow stays exactly as it was for the places that really are labels. */
+.tmk-section-title{
+	margin:0 0 var(--space-6);
+	font-family:var(--font-voice);
+	font-weight:var(--weight-voice);
+	font-size:var(--text-h2);
+	line-height:var(--leading-h2);
+	letter-spacing:var(--tracking-voice);
+	color:var(--color-text-primary);
+	text-wrap:balance;
+}
+/* The ember stays in the system as a 32px rule above the title rather than as the title's own
+   colour: the accent still marks where a section starts, without spending the brand's primary
+   action colour on a non-interactive heading (governance: a colour used for action-primary on a
+   view is not reused decoratively on that same view). */
+.tmk-section-title::before,.tmk-section-rule::before{
+	content:'';
+	display:block;
+	width:32px;
+	height:3px;
+	margin:0 0 var(--space-4);
+	background:var(--color-action-primary);
+	border-radius:var(--radius-pill);
+}
+/* .tmk-section-rule is the same accent, on its own, for the Elementor-rendered hubs. There the
+   section label IS already an <h2> and its type comes from the kit global (tmk_h2), because
+   Elementor puts _css_classes on the widget WRAPPER while the global styles the inner
+   .elementor-heading-title one level down - a class on the wrapper cannot win the type back from
+   base.css's own h1-h6 rules (the wrapper-vs-child trap this project has hit twice). So the two
+   engines share the MARK and each sets its own type through the mechanism that actually reaches
+   the element. No margin here: an Elementor container spaces its children with flex gap, and a
+   margin-bottom would double it. */
+
+/* A standfirst directly under a section title: pulls the two together so the note reads as part
+   of the heading block, not as the first paragraph of the content below it. */
+.tmk-section-title + .tmk-section-title__note{margin:calc(var(--space-6) * -1) 0 var(--space-6);max-width:56ch}
+
+
+/* ── Sottolineature del tema, 2026-09-04 ───────────────────────────────────────────────────
+   Hello Elementor spedisce `.comments-area a, .page-content a{text-decoration:underline}`.
+   Specificita' (0,1,1): batte `.tmk-card{text-decoration:none}` (0,1,0). Le tre route rese dal
+   template del tema - /storie/, /la-nostra-storia/, /allergeni/, le uniche senza _elementor_data -
+   finivano quindi con OGNI testo dentro una card sottolineato: titolo, occhiello, sommario e
+   "LEGGI" compresi, perche' la sottolineatura si eredita dall'<a> a tutti i discendenti. E' il
+   difetto che faceva sembrare Storie una pagina non finita. Trovato leggendo le regole applicate
+   via CDP, non deducendolo.
+   Si neutralizza SOLO sui link che sono componenti del design system, elencati uno per uno: i
+   link dentro un testo di prosa devono restare sottolineati, che e' la scelta accessibile
+   giusta e non un difetto. Stessa specificita' della regola del tema (0,2,0 o piu'), e questo
+   foglio carica dopo (enqueue priority 20 contro 10 del tema), quindi vince senza !important. */
+.page-content a.tmk-card,
+.page-content a.tmk-cover,
+.page-content a.tmk-cta,
+.page-content .tmk-breadcrumb a,
+.page-content .tmk-card a,
+.page-content .tmk-nearby a,
+.page-content .tmk-city-card,
+.comments-area a.tmk-card,
+.comments-area a.tmk-cover{text-decoration:none}
+.page-content a.tmk-card:hover,
+.page-content a.tmk-cover:hover,
+.page-content a.tmk-cta:hover{text-decoration:none}

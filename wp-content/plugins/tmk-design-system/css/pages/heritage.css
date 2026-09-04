@@ -1,0 +1,161 @@
+/* TMK Heritage — composition-only layer for the emotional-heart page (inc/heritage-render.php).
+   Direct translation of pages/Heritage.jsx: a cinematic hero (outside this stack), a slow centred
+   manifesto, an illustration-led origins diptych that alternates sides, a two-column "meeting" spread
+   (identity rail + Timeline), a full-bleed cinematic breath, and a garland-framed closing manifesto. */
+
+/* grid-template-columns is explicit for a reason (client review round 4, §6). Without it these
+   two grids get ONE implicit `auto` column, which sizes to its content's max-content
+   contribution - and .tmk-heritage__origin's own `repeat(auto-fit,minmax(300px,1fr))` reports
+   728px (2 x 300 + a 64px gap + 2 x 32px padding) no matter how narrow the viewport is. That
+   is what produced 353px of horizontal scroll at 375: the page's 32px gutter was intact, the
+   track underneath it simply wasn't. minmax(0,1fr) pins the track to the container instead, so
+   auto-fit collapses to one column as designed. Same min-width:auto shrink-refusal this
+   codebase has already hit twice in flex context, here in grid. */
+.tmk-heritage{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--tmk-rhythm-airy);padding:var(--hero-to-breadcrumb) 0 var(--space-9)}
+.tmk-heritage__col{max-width:none;margin:0;padding-inline:var(--body-inset);width:100%}
+
+/* MANIFESTO — slow, large, centred. */
+/* MANIFESTO — resta centrato, perche' e' l'unico blocco della pagina con funzione DAVVERO
+   introduttiva (la regola del brief: centrare solo quando ha una ragione). Ma smette di essere
+   un paragrafo: passa alla faccia Voice alla scala display, con una misura stretta, e diventa la
+   prima cosa che si legge invece di un testo che galleggia in mezzo al vuoto. */
+/* ALLINEATO A SINISTRA, non centrato (brief: "evita di centrare tutto"). Misurato prima:
+   il manifesto stava a 218..1222, cioe' su un asse tutto suo, mentre l'h1 dell'hero stava a 160,
+   il breadcrumb a 380 e i titoli delle origini a 32 e 801. Sei assi diversi su una pagina sola:
+   e' quello che la faceva sembrare assemblata. Ora tutto parte da --body-inset. */
+.tmk-heritage__manifesto{text-align:start;max-width:none}
+/* 24ch, non 15: a 15 il manifesto diventava una colonna alta e strettissima (dieci righe da
+   due-tre parole), che e' un difetto opposto ma altrettanto vistoso. */
+.tmk-heritage__manifesto p{max-width:34ch}
+.tmk-heritage__manifesto p{
+	margin:0;
+	font-family:var(--font-voice);
+	font-weight:var(--weight-voice);
+	font-size:clamp(2rem,1.1rem + 2.6vw,3.2rem);
+	line-height:1.06;
+	letter-spacing:var(--tracking-voice);
+	color:var(--color-text-primary);
+	text-wrap:balance;
+}
+
+/* ORIGINS — illustration-dominant diptych; every other panel flips art/text. */
+.tmk-heritage__origins{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-7)}
+.tmk-heritage__origin{
+	max-width:none;margin:0;padding-inline:var(--body-inset);width:100%;
+	display:grid;
+	/* ASIMMETRICA, non 50/50: la fotografia porta il peso, il testo tiene una misura di lettura.
+	   Prima erano due colonne uguali con un disegno gigante da una parte e quattro righe
+	   dall'altra - la sezione non aveva un elemento dominante. */
+	grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
+	gap:clamp(var(--space-7),5vw,var(--space-9));
+	align-items:center;
+}
+.tmk-heritage__origin.is-flip .tmk-heritage__origin-art{order:2}
+/* La fotografia e' un blocco pieno con il raggio delle superfici fotografiche del sistema, non
+   un'illustrazione che fluttua: stessa grammatica delle card. */
+.tmk-heritage__origin-art{margin:0;border-radius:var(--radius-media);overflow:hidden;box-shadow:var(--elevation-raised)}
+/* 5/4 e non 4/5. A 1120 di colonna la parte fotografica e' larga ~596px: con 4/5 diventava
+   alta 745px contro un blocco di testo da ~250px, e la meta' inferiore della riga restava vuota
+   - il "troppo vuoto" segnalato. Con 5/4 la foto e' 596x477 e le due colonne si equilibrano. */
+.tmk-heritage__origin-art img{display:block;width:100%;height:100%;aspect-ratio:5/4;object-fit:cover}
+.tmk-heritage__origin-text{max-width:46ch}
+.tmk-heritage__side{margin:0 0 var(--space-3);font-family:var(--font-structure);font-weight:var(--weight-structure-bold);font-size:var(--text-caption);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-action-primary-on-light)}
+.tmk-heritage__origin-title{margin:0 0 var(--space-5);font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-display);line-height:0.9;color:var(--color-text-primary)}
+.tmk-heritage__origin-body{margin:0;font-family:var(--font-structure);font-size:var(--text-lead);line-height:var(--leading-prose);color:var(--color-text-primary);text-wrap:pretty}
+
+/* THE MEETING — identity rail balances the Timeline so the width fills with intent. */
+.tmk-heritage__meeting{
+	max-width:none;margin:0;padding-inline:var(--body-inset);width:100%;
+	display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:clamp(32px,5vw,var(--space-9));align-items:start;
+}
+.tmk-heritage__meeting-title{margin:0 0 var(--space-6);font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-h1);line-height:0.95;color:var(--color-text-primary);text-wrap:balance}
+/* La rail accompagna la lettura dei quattro passaggi invece di scorrere via al primo. */
+@media (min-width:768px){.tmk-heritage__meeting-rail{position:sticky;top:calc(var(--space-9) + var(--space-5));align-self:start}}
+@media (max-width:767px){.tmk-heritage__meeting{grid-template-columns:1fr}}
+
+/* CINEMATIC — a full-bleed photographic breath. */
+.tmk-heritage__cinematic{margin:0;width:100%}
+.tmk-heritage__cinematic img{display:block;width:100%;height:clamp(360px,62vh,640px);object-fit:cover}
+
+/* CLOSING — garland-framed manifesto + discovery CTA. */
+/* CLOSING — banda scura piena, come la chiusura della Home. Prima era testo centrato su crema
+   con la ghirlanda stesa DIETRO al titolo e alla CTA: misurata, la sovrapposizione era reale e
+   la ghirlanda passava sotto le lettere. Su fondo ink la ghirlanda torna a fare la cornice (sta
+   sopra il titolo, non dietro) e la CTA finale ha finalmente il peso di una chiusura. */
+.tmk-heritage__closing{
+	background:var(--color-surface-inverse);
+	padding-block:clamp(var(--space-9),9vw,var(--space-10));
+	padding-inline:var(--body-inset);
+	text-align:center;
+	display:grid;
+	justify-items:center;
+	gap:var(--space-5);
+}
+/* L'arte della ghirlanda e' OPACA fino a entrambi i bordi (verificato sul PNG: colonna 0 e
+   colonna 2044 non trasparenti), quindi dentro il viewport si vedono due tagli netti - il
+   difetto "decorazione tagliata" segnalato sulla chiusura di questa pagina. Non si puo'
+   risolvere con la larghezza; si risolve dissolvendo le estremita'. */
+.tmk-heritage__garland{
+	width:min(92%,860px);height:auto;margin-bottom:var(--space-4);
+	-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent 100%);
+	        mask-image:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent 100%);
+}
+.tmk-heritage__closing-title{margin:0;font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-display);line-height:1.04;color:var(--color-text-inverse);text-wrap:balance}
+.tmk-heritage__closing-body{max-width:56ch;margin:0;font-family:var(--font-structure);font-size:var(--text-lead);line-height:var(--leading-lead);color:var(--tatami-200);text-wrap:pretty}
+.tmk-heritage__closing .tmk-cta{margin-top:var(--space-3)}
+
+
+/* ── RITMO E GERARCHIA (rework 2026-09-04) ─────────────────────────────────────────────────
+   Il difetto piu' visibile della pagina non era un singolo blocco: era che tutti i blocchi
+   avevano lo stesso peso e lo stesso respiro, separati da un unico gap "airy". Qui il ritmo
+   diventa a tre livelli - respiro pieno intorno ai momenti narrativi, respiro corto fra un
+   occhiello e il suo titolo - e la gerarchia tipografica smette di essere piatta. */
+
+/* L'occhiello di sezione (GIAPPONE / BRASILE / LA STORIA) sale al registro etichetta del
+   sistema, con il filetto ember che marca l'inizio di un movimento. */
+.tmk-heritage__side{
+	margin:0 0 var(--space-4);
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-action-primary-on-light);
+}
+.tmk-heritage__side::before{
+	content:'';
+	display:block;
+	width:32px;
+	height:3px;
+	margin:0 0 var(--space-4);
+	background:var(--color-action-primary);
+	border-radius:var(--radius-pill);
+}
+/* Il titolo di origine scende dal display alla scala h1: sopra c'e' gia' il manifesto in
+   display, e due display di fila annullano la gerarchia che dovrebbero creare. */
+.tmk-heritage__origin-title{font-size:var(--text-h1);line-height:var(--leading-h1)}
+
+/* Le due origini sono un unico movimento: fra loro respiro strutturato, non airy. */
+.tmk-heritage__origins{display:grid;gap:clamp(var(--space-9),7vw,var(--space-10))}
+
+/* La fotografia a tutta larghezza e' una pausa, non una sezione: le tolgo il gap airy sopra e
+   sotto cosi' funziona da stacco fra la storia e la chiusura. */
+.tmk-heritage .tmk-heritage__cinematic{margin-block:calc(var(--tmk-rhythm-airy) * -0.35)}
+
+@media (max-width:767px){
+	.tmk-heritage__origin{grid-template-columns:minmax(0,1fr);gap:var(--space-6)}
+	.tmk-heritage__origin.is-flip .tmk-heritage__origin-art{order:0}
+	.tmk-heritage__origin-art img{aspect-ratio:4/3}
+	.tmk-heritage__origin-text{max-width:none}
+}
+
+
+/* La striscia crema fra la fascia fotografica a tutta larghezza e la banda scura di chiusura era
+   il gap della griglia di .tmk-heritage, non una scelta: misurata ~70px, leggeva come un errore
+   di montaggio. La chiusura risale a filo della fotografia. */
+.tmk-heritage__cinematic + .tmk-heritage__closing{margin-top:calc(var(--tmk-rhythm-airy) * -1)}
+.tmk-heritage__closing-title{max-width:22ch;margin-inline:auto}
+
+/* La pagina chiudeva con --space-9 di crema fra la banda scura e il footer, anch'esso scuro:
+   una striscia chiara di ~96px incastrata fra due aree ink. */
+.tmk-heritage:has(> .tmk-heritage__closing:last-child){padding-bottom:0}

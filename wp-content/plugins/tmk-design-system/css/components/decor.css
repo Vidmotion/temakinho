@@ -1,0 +1,352 @@
+/* TMK Decor — the shared ambient-illustration system (client review "chiusura progetto", task 2).
+   ==========================================================================================
+
+   WHERE IT COMES FROM. The composition that works today lives in ONE place and one place only:
+   page #36's own Elementor "Custom CSS" field, written by hand for the Homepage. It is not in
+   this plugin, not in the kit, and not in any _BUILD script, so no other route could ever inherit
+   it. Every other page instead received inc/refinements.php's tmk_render_page_decor(): exactly
+   two <img> elements (leaves-banana, snake) pinned at top:26% and top:64% of TOTAL DOCUMENT
+   HEIGHT. That is why the rest of the site reads as "stickers": two pieces is not a composition,
+   and a percentage of document height means the same rule lands in a different place on every
+   page and drifts the moment an editor adds a paragraph.
+
+   THE PRINCIPLES, lifted from the Homepage's own CSS rather than reinvented:
+     1. VIEWPORT-EDGE ANCHORING, not container-edge. --edge resolves to the viewport's left edge
+        expressed in the anchor's own coordinate system, so a piece can sit in the page gutter at
+        1900px and slide cleanly off the edge at 1440px with the SAME rule and the same crop.
+     2. SECTION-RELATIVE VERTICAL ANCHORING. Vertical offsets are measured from a real section,
+        never from the document. A section cannot drift relative to itself, which is precisely the
+        failure mode of the 26%/64% rule this replaces (and the reason review round 3 had already
+        moved the Location page's two pieces into their own components).
+     3. NEVER OVER CONTENT. Each piece is a ::before/::after on the section, painted at z-index:-1
+        inside a stacking context the section itself opens (isolation:isolate). Content is not
+        "lifted" with z-index on every child - it simply paints above, by the painting rules, with
+        no per-child rule that a future widget could forget.
+     4. DECORATIVE BY CONSTRUCTION. A pseudo-element is not in the accessibility tree, cannot be
+        focused, cannot be hit-tested (pointer-events:none is belt-and-braces) and adds no markup
+        an Elementor editor can accidentally move or delete.
+     5. INTENTIONAL CROPS. A piece that leaves the page is cut by the VIEWPORT EDGE, never by an
+        arbitrary box - so it reads as "the composition continues outside the page". That crop
+        comes from body{overflow-x:clip} (css/refinements/shell.css), which is viewport-wide;
+        the anchor itself must NOT clip, or a boxed anchor would cut the piece away entirely.
+        See the note on the engine rule below - this was a real bug in the first version.
+     6. RESTRAINT. Two pieces per section, maximum, by construction: there are only ::before and
+        ::after. Left motifs use ::before, right motifs ::after, so a section can carry one of
+        each and can never carry three. The brief's "le decorazioni non devono diventare
+        protagoniste" is enforced by the API, not by discipline.
+     7. NO NEW ART. Every motif below draws on one of the five illustrations already in the media
+        library - garland-horizontal (#26), leaves-banana (#46), snake (#47), koi (#229),
+        macaw (#557) - the same five the Homepage composes with.
+
+   HOW A PAGE USES IT. Add one motif class to a section that already exists. No wrapper, no
+   markup, no <img>, nothing for an editor to break:
+       <section class="tmk-story-hub__briefs tmk-decor-l-leaves">
+   The art URLs arrive as custom properties (--tmk-art-*) printed once per request by
+   tmk_decor_art_vars() in inc/refinements.php, because a stylesheet cannot know the site's
+   uploads path. A motif whose asset is missing resolves to background-image:none and simply
+   does not paint - it never falls back to a broken box. */
+
+/* ---- ENGINE --------------------------------------------------------------------------- */
+
+.tmk-decor-l-leaves,.tmk-decor-l-koi,.tmk-decor-l-vine,.tmk-decor-l-garland,
+.tmk-decor-r-leaves,.tmk-decor-r-koi,.tmk-decor-r-snake,.tmk-decor-r-macaw,.tmk-decor-r-vine{
+	position:relative;
+	isolation:isolate;
+	/* NESSUN clip qui — e questa e' la conclusione di tre tentativi, tutti misurati.
+	   1) `overflow-x:clip` sull'ancora: ogni pezzo e' posizionato FUORI dall'ancora, nel gutter
+	      (`left` vale `--edge - 0.76*--w`, un numero negativo). Il clip taglia sulla scatola
+	      DELL'ANCORA, quindi su un'ancora BOXED — a sua volta rientrata rispetto al viewport,
+	      come una sezione di .tmk-stack (1440px, 230px dal bordo a 1900) — il pezzo cadeva
+	      interamente fuori e non veniva mai dipinto. A 1900px /storie/ portava quattro classi
+	      motivo e mostrava ZERO illustrazioni. Misurare la scatola dello pseudo-elemento non lo
+	      rilevava: la scatola era giusta, era il clip a cancellarla. Trovato guardando uno
+	      screenshot.
+	   2) `overflow-clip-margin:100vw` per allargare la regione di clip: la proprieta' viene
+	      calcolata (verificato: 1900px) ma Chromium la IGNORA quando un asse e' `clip` e l'altro
+	      `visible`, che e' esattamente la combinazione necessaria qui per lasciar sbordare in
+	      verticale. Nessun effetto.
+	   3) Nessun clip sull'ancora, affidandosi a `body{overflow-x:clip}`: sbagliato, perche'
+	      quando l'overflow di <body> viene PROPAGATO al viewport (<html> e' `visible`) <body>
+	      torna a comportarsi come `visible` e non taglia. Misurato: lo screenshot fullPage di
+	      /storie/ a 1900 usciva 2245px, il documento si era allargato.
+	   SOLUZIONE: il clip sta su <html> (css/refinements/shell.css). Li' taglia esattamente sul
+	   bordo del viewport — che e' dove il taglio deve cadere — e, essendo `clip`, il contenuto
+	   ritagliato non contribuisce alla regione di scorrimento: nessun overflow orizzontale.
+	   L'ancora resta `position:relative` (containing block) e `isolation:isolate` (stacking
+	   context che tiene lo z-index:-1 sopra lo sfondo della sezione e sotto il contenuto). */
+	--edge:calc(50% - 50vw);
+	/* QUANTO SPAZIO C'E' DAVVERO. Dopo l'unificazione della griglia (task 1) la colonna di
+	   contenuto e' larga --container-page: sopra i ~1504px avanza (100vw - 1440)/2 per lato, sotto
+	   non avanza NIENTE. Dimensionare i motivi in vw ignorava questa differenza: a 1900 stavano nel
+	   gutter, a 1440 finivano dentro la colonna di testo (misurato sulla "La gioia" di Chi siamo,
+	   dove la liana passava sotto il paragrafo). Ora la larghezza di ogni pezzo DERIVA dallo spazio
+	   disponibile: --tmk-decor-room e' quanto puo' essere visibile, e ogni motivo la divide per la
+	   propria frazione visibile (1 - --f, piu' il margine che la rotazione aggiunge). I 60px di
+	   base sono il minimo perche' un motivo resti percepibile quando il gutter e' zero: entra dal
+	   bordo e si ferma poco dentro, non attraversa la colonna. */
+	/* LA CORSIA REALE. Prima: max(0,(100vw - 1440)/2)*0.95 + 60px. Quel "+60" era il problema:
+	   a 1440 la corsia valeva ZERO e i 60px di consolazione producevano motivi da 118px, cioe'
+	   le schegge. Ora la colonna di contenuto e' --container-body (1120, la misura della Home) e
+	   la corsia esiste davvero: 160px a 1440, 400px a 1920. Niente fondo artificiale - dove la
+	   corsia e' zero il motivo ha larghezza zero e semplicemente non c'e', che e' la risposta
+	   onesta a "non c'e' spazio" (e sotto i 1300px c'e' comunque una media query esplicita). */
+	--tmk-decor-room:max(0px,(100vw - var(--container-body)) / 2);
+}
+
+.tmk-decor-l-leaves::before,.tmk-decor-l-koi::before,.tmk-decor-l-vine::before,.tmk-decor-l-garland::before,
+.tmk-decor-r-leaves::after,.tmk-decor-r-koi::after,.tmk-decor-r-snake::after,.tmk-decor-r-macaw::after,.tmk-decor-r-vine::after{
+	content:'';
+	position:absolute;
+	/* inset:auto e height:auto sono OBBLIGATORI, non ridondanti. Su un container Elementor
+	   (.e-con) il ::before e' gia' usato da Elementor per il proprio background-overlay, con
+	   `inset:0; height:100%`. Quelle dichiarazioni vincono su aspect-ratio - che governa solo
+	   quando una delle due dimensioni e' auto - e il motivo veniva STIRATO all'altezza
+	   dell'ancora: misurato 497px su /lavora-con-noi/ e 11308px su /menu/ (l'altezza intera della
+	   pagina del menu) contro i 237px corretti su Chi siamo, che non e' un container Elementor.
+	   Da qui la liana che attraversava mezza pagina. Azzerando inset e height, width + aspect-ratio
+	   tornano a decidere la geometria su entrambi i motori di rendering. */
+	inset:auto;
+	height:auto;
+	z-index:-1;
+	pointer-events:none;
+	display:block;
+	background-repeat:no-repeat;
+	background-position:center;
+	background-size:contain;
+	opacity:calc(var(--tmk-decor-op,.82) * var(--tmk-decor-fade,1));
+	transform:rotate(var(--tmk-decor-rot,0deg));
+}
+
+/* ---- GEOMETRY -----------------------------------------------------------------------------
+   RISCRITTA IL 2026-09-04 dopo una QA visiva vera (screenshot guardati, non solo misurati).
+   La versione precedente derivava la larghezza di ogni pezzo dal GUTTER disponibile
+   (--tmk-decor-room). Misurato a 1440: il gutter e' 32px, quindi room = 60px e i motivi
+   uscivano 118x134 (foglie), 150x84 (serpente), 96x143 (ara), 335x66 (liana). Frammenti.
+   La Home - il riferimento estetico - alla STESSA larghezza porta 467x508, 606x366, 249x1260,
+   194x290, 548x588, 1270x582. Un ordine di grandezza di differenza: e' esattamente il
+   "sembrano errori" del brief.
+
+   PERCHE' la Home puo' permetterselo: la sua colonna di contenuto e' larga 1120 e centrata,
+   quindi ha 160px di margine per lato a 1440 e 400px a 1920. Le pagine interne, dopo
+   l'unificazione della griglia, hanno una colonna da 1440 con 32px di gutter: margine ZERO.
+   Non si puo' quindi dimensionare l'arte sul gutter, perche' il gutter non esiste.
+
+   NUOVA REGOLA, presa dalla Home e non dal gutter:
+     1. La larghezza e' un clamp() sul VIEWPORT, alla scala della Home (~180-250px di parte
+        visibile per pezzo), non una frazione di uno spazio che vale zero.
+     2. Il pezzo sborda SEMPRE dal bordo del viewport. Non e' un vezzo: e' obbligatorio.
+        Verificato sui file sorgente - garland-horizontal, leaves-banana, snake e koi sono
+        OPACHI fino ai propri bordi (colonna 0 e colonna w-1 non trasparenti). Ogni
+        illustrazione e' gia' un ritaglio: se la si mette tutta dentro il viewport si vede il
+        suo taglio netto, ed e' precisamente il difetto "decorazione tagliata" del brief.
+        Fuori dal bordo, il taglio cade dove deve cadere.
+     3. La sovrapposizione con la colonna di contenuto e' AMMESSA e voluta, come sulla Home,
+        perche' tutto e' z-index:-1: dove il contenuto e' opaco (card, foto, bande scure) il
+        pezzo semplicemente non si vede. Sta al posizionamento verticale, pagina per pagina,
+        ancorare ogni motivo accanto a contenuto opaco e mai accanto a un paragrafo.
+     4. Opacita' piena. La riduzione a .55 del tier intermedio e' stata rimossa: era il
+        "opacizzate senza motivo" del brief.
+
+   ARITMETICA. Un elemento assoluto e' posizionato rispetto alla padding box della sezione;
+   --edge e' il bordo sinistro del viewport nello stesso sistema. transform:rotate() gira la
+   scatola attorno al centro e NON sposta left/right, quindi il bordo VISIBILE e' spostato di
+   (bboxWidth - width)/2 rispetto al bordo di layout. I fattori sotto sono quel calcolo per
+   l'angolo e il rapporto di ogni motivo, e ogni regola dichiara quanti pixel visibili produce
+   a 1440 e a 1920 - i due valori che ho poi verificato a schermo. */
+
+/* ---- LEFT MOTIFS (botanica, continua - la grammatica sinistra della Home) --------------- */
+
+/* Foglie di banano dal bordo sinistro. rot(-12deg) su una scatola 1:1.135 allarga il bounding
+   box a ~1.21x, quindi il bordo destro visibile cade a left + 1.107*--w.
+   visibile = (1.107 - 0.72) * w = 0.387 * w  ->  190px a 1440, 224px a 1920. */
+.tmk-decor-l-leaves::before{
+	/* visibile = (1.107 - 0.72)*w = 0.387*w, e 0.387*w non deve superare la corsia:
+	   160px a 1440, 224px a 1920 (dove il tetto di 580 entra prima della corsia). */
+	--w:min(580px, calc(var(--tmk-decor-room) / 0.387));
+	background-image:var(--tmk-art-leaves,none);
+	width:var(--w);
+	aspect-ratio:1057/1200;
+	--f:0.72;
+	left:calc(var(--edge) - var(--w) * (var(--f) + var(--push,0)));
+	top:-72px;
+	--tmk-decor-rot:-12deg;
+	--tmk-decor-op:1;
+}
+
+/* La ghirlanda ruotata di 90deg diventa una liana verticale: il gesto MILANO -> BOLOGNA ->
+   LIONE della Home, generalizzato. Ruotata, la larghezza dipinta e' l'altezza di layout
+   (0.197 * --w) e il bordo sinistro dipinto cade a edge + w*(0.4014 - f).
+   Con f = 0.473 il pezzo si posiziona ESATTAMENTE come sulla Home (misurato li': -90..159 a
+   1440 con w=1260). Larghezza dipinta 250px a 1440, 256px a 1920. */
+.tmk-decor-l-vine::before{
+	/* Ruotata di 90deg il bordo destro dipinto cade a edge + w*(0.5984 - 0.473) = 0.1254*w:
+	   e' quello a non dover superare la corsia. A 1440 -> w=1276, dipinta 251px, bordo destro
+	   esattamente a 160 - cioe' gli stessi -90..159 misurati sulla Home. */
+	--w:min(1300px, calc(var(--tmk-decor-room) / 0.1254));
+	background-image:var(--tmk-art-garland,none);
+	width:var(--w);
+	aspect-ratio:2048/404;
+	--f:0.473;
+	left:calc(var(--edge) - var(--w) * (var(--f) + var(--push,0)));
+	top:calc(50% - var(--w) * 0.0986);
+	--tmk-decor-rot:90deg;
+	--tmk-decor-op:1;
+}
+
+/* Il koi e' l'unico pezzo che sulla Home sta quasi tutto DENTRO (misurato: 194x290, interamente
+   nel margine destro). Qui stessa cosa: piccolo, quasi intero, appoggiato al bordo.
+   Arte quasi verticale, la rotazione non cambia il bounding box: visibile = (1 - 0.16) * w
+   -> 181px a 1440, 202px a 1920. */
+.tmk-decor-l-koi::before{
+	/* visibile = (1 - 0.16)*w = 0.84*w */
+	--w:min(300px, calc(var(--tmk-decor-room) / 0.84));
+	background-image:var(--tmk-art-koi,none);
+	width:var(--w);
+	aspect-ratio:671/1200;
+	--f:0.16;
+	left:calc(var(--edge) - var(--w) * (var(--f) + var(--push,0)));
+	top:24%;
+	--tmk-decor-rot:-14deg;
+	--tmk-decor-op:1;
+}
+
+/* La ghirlanda in orizzontale: il gesto di chiusura sotto l'ultima banda di una pagina.
+   DEVE essere piu' larga del viewport, perche' l'arte e' opaca fino a entrambi i bordi (vedi
+   nota 2 in testa): a 720px dentro un viewport da 1440 si vedevano tutti e due i tagli netti,
+   ed e' il difetto segnalato sulla chiusura di Chi siamo. 132vw li porta entrambi fuori. */
+.tmk-decor-l-garland::before{
+	--w:max(1240px, 132vw);
+	background-image:var(--tmk-art-garland,none);
+	width:var(--w);
+	aspect-ratio:2048/404;
+	left:calc(var(--edge) - (var(--w) - 100vw) / 2);
+	bottom:calc(var(--w) * -0.075);
+	--tmk-decor-rot:-4deg;
+	--tmk-decor-op:1;
+}
+
+/* ---- RIGHT MOTIFS (fauna - la grammatica destra della Home) -----------------------------
+   `right:` misura verso sinistra dal bordo destro della sezione e --edge e' negativo, quindi
+   right:calc(var(--edge) - N) spinge il pezzo ancora piu' fuori: lo specchio esatto dei
+   motivi di sinistra, con la stessa aritmetica. */
+
+.tmk-decor-r-leaves::after{
+	--w:min(580px, calc(var(--tmk-decor-room) / 0.387));
+	background-image:var(--tmk-art-leaves,none);
+	width:var(--w);
+	aspect-ratio:1057/1200;
+	--f:0.72;
+	right:calc(var(--edge) - var(--w) * (var(--f) + var(--push,0)));
+	top:4%;
+	--tmk-decor-rot:196deg;
+	--tmk-decor-op:1;
+}
+
+/* Il serpente e' il protagonista di destra, esattamente come sulla Home (li': 606x366, 221px
+   visibili). Largo e basso (1600:893), rot(-4deg) allarga il bbox solo del ~3%.
+   visibile = (1.03 - 0.66) * w = 0.37 * w  ->  235px a 1440, 244px a 1920. */
+.tmk-decor-r-snake::after{
+	/* visibile = (1.03 - 0.66)*w = 0.37*w */
+	--w:min(660px, calc(var(--tmk-decor-room) / 0.37));
+	background-image:var(--tmk-art-snake,none);
+	width:var(--w);
+	aspect-ratio:1600/893;
+	--f:0.66;
+	right:calc(var(--edge) - var(--w) * (var(--f) + var(--push,0)));
+	top:12%;
+	--tmk-decor-rot:-4deg;
+	--tmk-decor-op:1;
+}
+
+.tmk-decor-r-koi::after{
+	/* visibile = (1 - 0.50)*w = 0.50*w */
+	--w:min(300px, calc(var(--tmk-decor-room) / 0.50));
+	background-image:var(--tmk-art-koi,none);
+	width:var(--w);
+	aspect-ratio:671/1200;
+	/* --f alzato da 0.16 a 0.50 il 2026-09-04 guardando lo screenshot: sulla pagina ristorante
+	   il koi restava INTERAMENTE dentro il viewport, su fondo crema, senza niente che lo
+	   tagliasse - e quindi mostrava i propri bordi netti e leggeva come uno sticker appoggiato.
+	   E' la stessa correzione, e per la stessa ragione, gia' applicata al motivo di sinistra.
+	   Il koi della Home puo' stare tutto dentro perche' li' e' appoggiato a una fascia
+	   fotografica che gli fa da sfondo; qui non c'e'. */
+	--f:0.50;
+	right:calc(var(--edge) - var(--w) * (var(--f) + var(--push,0)));
+	top:18%;
+	--tmk-decor-rot:190deg;
+	--tmk-decor-op:1;
+}
+
+/* L'ara e' l'unico pezzo con una TESTA riconoscibile, quindi il suo taglio e' quello che
+   leggerebbe come errore se cadesse nel punto sbagliato: ancorato in basso e molto fuori, il
+   taglio cade sempre sulla coda e sul corpo, mai sul viso.
+   NOTA: al 2026-09-04 nessuna pagina usa questo motivo - e' stato tolto da /lavora-con-noi/ su
+   richiesta esplicita ("il pappagallo deve essere rimosso"). La regola resta definita perche'
+   la Home usa l'ara dentro la propria illustrazione di testata e il motivo puo' servire, ma
+   NON va riapplicato a una pagina senza una decisione. */
+.tmk-decor-r-macaw::after{
+	--w:min(420px, calc(var(--tmk-decor-room) / 0.40));
+	background-image:var(--tmk-art-macaw,none);
+	width:var(--w);
+	aspect-ratio:1074/1600;
+	--f:0.60;
+	right:calc(var(--edge) - var(--w) * (var(--f) + var(--push,0)));
+	bottom:-56px;
+	--tmk-decor-rot:6deg;
+	--tmk-decor-op:1;
+}
+
+.tmk-decor-r-vine::after{
+	--w:min(1300px, calc(var(--tmk-decor-room) / 0.1254));
+	background-image:var(--tmk-art-garland,none);
+	width:var(--w);
+	aspect-ratio:2048/404;
+	--f:0.473;
+	right:calc(var(--edge) - var(--w) * (var(--f) + var(--push,0)));
+	top:calc(50% - var(--w) * 0.0986);
+	--tmk-decor-rot:-90deg;
+	--tmk-decor-op:1;
+}
+
+/* ---- SOTTO I 1300px: la corsia non basta piu' -----------------------------------------------
+   La corsia vale (100vw - 1120)/2, quindi esiste solo sopra i ~1184px e sotto i 1300 e' cosi'
+   sottile che un motivo dimensionato su di essa tornerebbe a essere una scheggia. E' esattamente
+   il difetto da cui siamo partiti, quindi qui i motivi di pagina escono del tutto.
+   Non e' "le decorazioni spariscono": resta .tmk-decor--keep, il singolo accento che una pagina
+   dichiara esplicitamente e che vive SOPRA una fotografia, mai accanto a un paragrafo. E' la
+   stessa risposta della Home, misurata: a 390px la Home tiene UNA foglia di banano, tagliata dal
+   bordo, dietro l'illustrazione di testata, e nient'altro. */
+@media (max-width:1299px){
+	.tmk-decor-l-leaves::before,.tmk-decor-l-koi::before,.tmk-decor-l-vine::before,
+	.tmk-decor-r-leaves::after,.tmk-decor-r-koi::after,.tmk-decor-r-snake::after,
+	.tmk-decor-r-macaw::after,.tmk-decor-r-vine::after{display:none}
+
+	/* L'accento dichiarato dalla pagina resta, dimensionato sul viewport e non sulla corsia,
+	   perche' qui una corsia non c'e' e il pezzo sta sopra la fotografia dell'hero. */
+	.tmk-decor--keep.tmk-decor-l-leaves::before{
+		display:block;
+		/* --f 0.80 -> 0.86 il 2026-09-04: misurato a 390px, la punta della foglia si fermava a
+		   ~4px dalla "I" di "In evidenza". Nessuna sovrapposizione reale, ma 4px non sono un
+		   margine: sono una coincidenza. A 0.86 il varco e' ~15px a 390 e ~30px a 1280. */
+		--w:clamp(200px,30vw,340px);
+		--f:0.86;
+		left:calc(var(--edge) - var(--w) * (var(--f) + var(--push,0)));
+		top:-32px;
+		--tmk-decor-op:1;
+	}
+	.tmk-decor--keep.tmk-decor-r-koi::after{
+		display:block;
+		--w:clamp(96px,14vw,150px);
+		--f:0.42;
+		right:calc(var(--edge) - var(--w) * (var(--f) + var(--push,0)));
+		--tmk-decor-op:.9;
+	}
+	/* La ghirlanda di chiusura resta: vive sotto una banda scura opaca, non incontra mai il testo. */
+	.tmk-decor-l-garland::before{--w:max(900px,150vw)}
+}
+
+@media (max-width:600px){
+	.tmk-decor--keep.tmk-decor-l-leaves::before{--w:clamp(160px,42vw,240px);--f:0.88;top:-16px}
+	.tmk-decor--keep.tmk-decor-r-koi::after{display:none}
+	.tmk-decor-l-garland::before{--w:max(760px,190vw)}
+}

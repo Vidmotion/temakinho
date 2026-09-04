@@ -1,0 +1,31 @@
+/* TMK Footer — layout layer: the site-chrome region built from Footer.jsx. Lives in css/layout/,
+   not css/components/, for the same reason as header.css (singleton page-shell region).
+   Newsletter Capture styling it composes is shared — see css/components/newsletter.css. */
+.tmk-footer{background:var(--color-surface-inverse);color:var(--color-text-inverse);margin-top:var(--space-9)}
+.tmk-footer__garland{background:var(--color-surface);text-align:center;line-height:0}
+.tmk-footer__garland img{width:min(880px, 90%);display:inline-block;transform:translateY(18%)}
+.tmk-footer__grid{max-width:calc(var(--container-page) + 2 * var(--page-gutter));margin:0 auto;padding:var(--space-9) var(--page-gutter) var(--space-6);display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:var(--space-7)}
+.tmk-footer__brand{display:grid;gap:var(--space-4);align-content:start}
+.tmk-footer__brand svg{height:44px;width:auto;justify-self:start}
+.tmk-footer__brand-wordmark{font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:30px}
+.tmk-footer__tagline{margin:0;color:var(--tatami-400);font-size:var(--text-body-small);max-width:240px}
+.tmk-footer__social{display:flex;gap:var(--space-4)}
+.tmk-footer__social a{color:var(--tatami-300);font-size:var(--text-body-small);text-decoration:none}
+.tmk-footer__col h3{margin:0 0 var(--space-3);font-size:var(--text-caption);font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--tatami-400)}
+.tmk-footer__col ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-2)}
+.tmk-footer__col a{color:var(--tatami-200);font-size:var(--text-body-small);text-decoration:none}
+.tmk-footer__col a:hover{text-decoration:underline}
+.tmk-footer__bottom{border-top:1px solid rgba(247,241,227,0.12)}
+.tmk-footer__bottom-inner{max-width:calc(var(--container-page) + 2 * var(--page-gutter));margin:0 auto;padding:var(--space-4) var(--page-gutter);display:flex;flex-wrap:wrap;gap:var(--space-5);justify-content:space-between;font-size:var(--text-caption);color:var(--tatami-500)}
+.tmk-footer__legal{display:flex;gap:var(--space-4)}
+.tmk-footer__legal a{color:var(--tatami-500);text-decoration:none}
+.tmk-footer__legal a:hover{text-decoration:underline}
+
+/* Tap targets - WCAG 2.2 SC 2.5.8 (AA) asks for 24x24 CSS px on any pointer target that is not
+   inline in a sentence. The Footer's links are standalone navigation, not prose, so the exception
+   does not apply, and they measured 14px (column links), 22px (social) and 17px (legal) tall.
+   Padding rather than line-height, so the type keeps its designed leading and only the hit area
+   grows; inline-block so the padding applies to an inline element at all. The columns get taller
+   by 10px per row, which is the honest cost of a usable target and is absorbed by the Footer's
+   own generous vertical space. */
+.tmk-footer__col a,.tmk-footer__social a,.tmk-footer__legal a{display:inline-block;padding-block:5px}

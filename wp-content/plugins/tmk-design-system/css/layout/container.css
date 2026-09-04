@@ -1,0 +1,52 @@
+/* TMK container — structural width roles built on the tokens/layout.css grid variables.
+   Moved out of tokens/layout.css: tokens hold custom properties only, never classes —
+   this is layout, consumed by pages/components that need a bounded content width. */
+.tmk-container{width:100%;max-width:var(--container-standard);margin-inline:auto;padding-inline:var(--space-5)}
+.tmk-container--narrow{max-width:var(--container-narrow)}
+.tmk-container--wide{max-width:var(--container-wide)}
+.tmk-container--full{max-width:none;padding-inline:0}
+
+/* Raw post_content on the non-Elementor page shell (client review round 4, §6).
+   Three routes render through Hello Elementor's generic page template rather than an Elementor
+   document — Storie (#231), La Nostra Storia (#250) and Allergeni (#254), all confirmed by the
+   ABSENCE of an `elementor-page-*` body class. _BUILD/152 rightly neutralised Hello's own
+   `.site-main` boxed cap for them (it was strangling the full-bleed heroes into a legacy blog
+   column) with `padding-inline:0 !important`. Storie and La Nostra Storia were unaffected
+   because everything they print is a TMK component carrying its own gutter — Allergeni is not:
+   its post_content is plain <p> and <ul>, so it lost its last remaining inline space and
+   measured a literal 0px gutter at 375 / 768 / 1024 / 1440, text touching both viewport edges.
+   The gutter is restored on the plain flow elements only, never on the component wrappers
+   (which are divs/sections and match none of these selectors), so the heroes stay edge-to-edge
+   and no component gets a double gutter. Same --space-6 as every other route.
+   FLAGGED, NOT FIXED HERE: Allergeni still has no <h1> and no prose measure — at 1440 a
+   paragraph now runs the full 1376px. That is the page's own unfinished build (already on
+   record), not a padding decision; capping it would mean choosing a measure for a page nobody
+   has designed yet. */
+body:not([class*="elementor-page-"]) .site-main #main>:where(p,ul,ol,dl,h1,h2,h3,h4,h5,h6,blockquote,table,figure,pre){padding-inline:var(--space-6)}
+
+/* ===========================================================================
+   PAGE GRID roles (see tokens/layout.css for the full rationale and the
+   measured defect they fix). Two classes, one grid.
+
+   .tmk-page          SECTION role. max-width = --container-page + both
+                      gutters, so the CONTENT box maxes out at exactly
+                      --container-page (1440) and the gutter never drops below
+                      --page-gutter (32). This is byte-for-byte the same
+                      geometry an Elementor boxed container produces, which is
+                      what makes a plugin-rendered section land on the same
+                      axis as the Elementor footer without either side knowing
+                      about the other.
+   .tmk-page--reading READING role. Same gutter, same axis, prose measure.
+                      Narrower on purpose: the client's own brief says the
+                      shared grid does not mean the same padding on every
+                      inner element, it means every top-level container shares
+                      one grid. A centred 680px measure inside the 1440px grid
+                      is a reading decision, not a misalignment.
+
+   .tmk-page-inset    The same grid expressed as padding only, for elements
+                      whose BACKGROUND must stay edge-to-edge (the header bar,
+                      a full-bleed hero photo). Content moves, background does
+                      not. */
+.tmk-page{width:100%;max-width:calc(var(--container-body) + 2 * var(--page-gutter));margin-inline:auto;padding-inline:var(--page-gutter)}
+.tmk-page--reading{max-width:calc(var(--container-narrow) + 2 * var(--page-gutter))}
+.tmk-page-inset{padding-inline:var(--page-inset)}

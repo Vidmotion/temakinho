@@ -1,0 +1,33 @@
+/* TMK elevation (4 roles, geometric progression; warm ink shadow) + radius (3 roles only). */
+:root{
+  --elevation-resting:none;
+  --elevation-raised:0 2px 8px rgba(36,28,19,0.10);
+  --elevation-overlay:0 8px 24px rgba(36,28,19,0.16);
+  --elevation-modal:0 20px 56px rgba(36,28,19,0.26);
+
+  --radius-sharp:0;
+  --radius-soft:8px;
+  --radius-pill:9999px;
+  /* FOURTH RADIUS, added 2026-09-03 by explicit client decision, and recorded here rather than
+     smuggled in: the standing rule in this project is "exactly three radius values, no fourth".
+     The closing brief overrides it in one specific place - "le card devono mantenere ... stesso
+     border radius", with the Homepage named as the art-direction reference, and the Homepage's
+     photographic cards are built at 18px. Reproducing that language with --radius-soft (8px)
+     would have meant the shared component and the reference disagreeing on the single most
+     visible property of a photo card.
+     Scope is deliberately narrow: PHOTOGRAPHIC MEDIA SURFACES ONLY (Card --overlay, and any
+     future full-bleed media tile). Buttons, chips, inputs, tags and panels all stay on
+     --radius-soft, which is why the card's own action chip below is NOT 6px - that would have
+     been a fifth value for a 2px difference nobody can see. */
+  --radius-media:18px;
+
+  /* The Homepage's card hover: a wide, soft, low-opacity lift rather than the tighter
+     --elevation-overlay the component used. Kept as its own role because it is a MOTION state,
+     not a resting depth - the four roles above are a static progression and this one only ever
+     exists mid-transition. Value measured from the Homepage's own rule. */
+  --elevation-lift:0 22px 45px -28px rgba(36,28,19,0.55);
+
+  /* Icon size scale (10_SPEC Ch.16); single stroke weight */
+  --icon-sm:16px;--icon-md:24px;--icon-lg:32px;
+  --icon-stroke:1.75;
+}

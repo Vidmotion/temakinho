@@ -1,0 +1,110 @@
+/* --container-body / --body-inset, non --container-page / --page-gutter (2026-09-04):
+   la colonna di contenuto delle pagine interne va sulla griglia della Home (1120 centrati,
+   160px di margine a 1440) - vedi css/tokens/layout.css. Header e footer restano su
+   --container-page, come sulla Home. */
+/* TMK Story Hub — composition-only layer for the editorial magazine (inc/story-render.php).
+   Direct translation of pages/StoryHub.jsx's own layout: a full-bleed hero (rendered outside this
+   column) then a centred stack with airy editorial rhythm; the Cover story is a cinematic diptych
+   distinct from the card grid. Component styling stays in the components; only placement lives here. */
+
+.tmk-stack{
+	max-width:calc(var(--container-page) + 2 * var(--page-gutter));
+	margin:0 auto;
+	display:grid;
+	grid-template-columns:minmax(0,1fr);
+	gap:var(--tmk-rhythm-airy);
+	padding-block:var(--hero-to-section) var(--space-9);
+	/* --body-inset, non --page-gutter (2026-09-04). Con il gutter le bande di Storie stavano a
+	   x=32 mentre l'hero della stessa pagina, il resto del sito e la Home stavano a 160: due assi
+	   sulla stessa pagina, e nessuno spazio in cui far vivere le illustrazioni - la liana finiva
+	   sopra "In evidenza" e "Altre storie". .tmk-stack e' condiviso con Shop, Eventi e Lavora con
+	   noi, quindi la correzione vale per tutte e quattro. */
+	padding-inline:var(--body-inset);
+}
+.tmk-band-airy,.tmk-band-dense{width:100%}
+
+/* COVER STORY — cinematic diptych, one link; the lead image ratio is distinct from the 4:3 grid. */
+.tmk-cover{
+	display:grid;
+	grid-template-columns:1.05fr 1fr;
+	align-items:stretch;
+	text-decoration:none;color:inherit;
+	border-radius:var(--radius-soft);
+	overflow:hidden;
+	background:var(--color-surface-raised);
+	box-shadow:var(--elevation-raised);
+	transition:box-shadow var(--motion-transition) var(--ease-out);
+}
+.tmk-cover:hover,.tmk-cover:focus-visible{box-shadow:var(--elevation-overlay)}
+.tmk-cover__media{overflow:hidden;min-height:320px}
+.tmk-cover__media img{display:block;width:100%;height:100%;object-fit:cover;transition:transform var(--motion-transition) var(--ease-out)}
+.tmk-cover:hover .tmk-cover__media img{transform:scale(1.04)}
+.tmk-cover__text{
+	padding:clamp(28px,3.4vw,var(--space-8));
+	display:grid;gap:var(--space-4);align-content:center;
+}
+.tmk-kicker{font-family:var(--font-structure);font-weight:var(--weight-structure-bold);font-size:var(--text-caption);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-action-primary-on-light)}
+.tmk-cover__title{font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-display);line-height:0.95;color:var(--color-text-primary);text-wrap:balance}
+.tmk-standfirst{font-family:var(--font-structure);font-size:var(--text-lead);line-height:var(--leading-lead);color:var(--color-text-secondary);text-wrap:pretty}
+.tmk-cover__readmore{font-family:var(--font-structure);font-weight:var(--weight-structure-bold);font-size:var(--text-caption);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-action-primary-on-light)}
+
+@media (max-width:767px){
+	.tmk-cover{grid-template-columns:1fr}
+	.tmk-cover__media{min-height:220px}
+}
+
+@media (prefers-reduced-motion: reduce){
+	.tmk-cover:hover .tmk-cover__media img{transform:none}
+}
+
+/* ===========================================================================
+   STORY HUB — editorial pass (client review "chiusura progetto", task 5).
+   Composition only. Every card on this page is the design system's own Card component; nothing
+   below re-styles one, and no Storie-only restaurant card exists (the "Dove vivere queste storie"
+   row is tmk_render_city_card(), i.e. the identical .tmk-card--overlay.tmk-card--city the
+   Location page's "Altri ristoranti" row and the city bands use).
+
+   WHAT WAS WRONG, and it was a rhythm problem before it was a decoration problem:
+   .tmk-stack sets ONE gap (--tmk-rhythm-airy, 72-112px) between every band, so a 4-card index and
+   a single quote were separated by exactly as much air as the cover story and the magazine — the
+   page had no movements, just a queue. Hence "meno spazio vuoto percepito": the emptiness was
+   uniformity, not size. Two rhythms now: airy between MOVEMENTS (cover -> magazine -> bridge),
+   structured between a band and the band that continues its thought. */
+
+.tmk-story-hub{row-gap:var(--tmk-rhythm-airy)}
+/* "Altre storie" is the tail of "Dal magazine", not a new movement — they are one index split by
+   weight. Closing the gap between them is what turns four loose bands into three movements. */
+.tmk-story-hub__features + .tmk-story-hub__briefs{margin-top:calc((var(--tmk-rhythm-airy) - var(--tmk-rhythm-structured)) * -1)}
+
+/* COVER — the lead story carries the page. It was sharing the grid's 1.05fr/1fr with a 320px
+   media floor, which on a 1440-wide stack (the page grid is 1440 since task 1, it was 1040) made
+   the image the smaller half of the diptych. The media now leads and the text column is capped at
+   a reading measure so it never stretches into a banner. */
+@media (min-width:1024px){
+	.tmk-story-hub__cover .tmk-cover{grid-template-columns:1.45fr minmax(0,1fr)}
+	.tmk-story-hub__cover .tmk-cover__media{min-height:420px}
+	.tmk-story-hub__cover .tmk-cover__text{max-width:560px}
+}
+/* The cover title is the largest thing on the page after the hero, and it must stay clearly
+   ahead of a card title (--text-h4 at voice-soft 400) and of the section titles (--text-h2 at
+   900). --text-display already does that; the balance is what keeps it from breaking on a
+   one-word last line at the widths this column now reaches. */
+.tmk-cover__title{text-wrap:balance}
+
+/* CARDS — "card piu' curate" is a typographic job, not a new shape. The content-shape card is
+   the right component for an article (photo on top, text below, so the excerpt is readable);
+   what it lacked was internal hierarchy: eyebrow, title, excerpt and action all sat within one
+   step of each other. The title moves up a step and the kicker down to caption, so the three
+   levels inside a card are as legible as the three levels of the page. Scoped to this page: the
+   same component also renders menu, event and job cards elsewhere, and their content is shorter. */
+.tmk-story-hub .tmk-card--content .tmk-card__body{padding:var(--space-5) var(--space-5) var(--space-6);gap:var(--space-3)}
+.tmk-story-hub .tmk-card--content .tmk-card__title{font-size:var(--text-h3);line-height:var(--leading-h3);font-weight:var(--weight-voice);color:var(--color-text-primary)}
+.tmk-story-hub .tmk-card--content .tmk-card__eyebrow{color:var(--color-action-primary-on-light)}
+.tmk-story-hub .tmk-card--content .tmk-card__meta{display:block;color:var(--color-text-secondary);line-height:var(--leading-body)}
+/* The four-up "Altre storie" index is a denser register than the two-up feature row — a smaller
+   title there is what makes the two rows read as two levels of the same index. */
+.tmk-story-hub__briefs .tmk-card--content .tmk-card__title{font-size:var(--text-h4);line-height:var(--leading-h4)}
+
+/* THE BRIDGE — city cards get the airiest treatment on the page because they are the page's
+   conversion beat. No component override: only the row's own breathing. */
+.tmk-story-hub__cities .tmk-section-title__note{color:var(--color-text-secondary)}

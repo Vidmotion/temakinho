@@ -1,0 +1,37 @@
+/* TMK motion utilities — shared across every page (10_DESIGN_SYSTEM_SPECIFICATION.md Ch.19;
+   Creative Strategy motion philosophy: "motion narrates, never decorates"; default is stillness).
+   Pages consume these classes rather than each page inventing its own reveal/stagger logic. */
+
+/* Narrative reveal — for Arrival/Content-stage sections (Design System Spec Ch.49 Tree 10 density
+   logic already governs WHERE motion is dense; this utility only supplies the mechanism). */
+.tmk-js .tmk-reveal{opacity:0;transform:translateY(16px);transition:opacity var(--motion-narrative) var(--ease-out),transform var(--motion-narrative) var(--ease-out)}
+.tmk-reveal.is-visible{opacity:1;transform:none}
+
+/* Stagger — children reveal in sequence (used by Card Grid, Trust Band rotating items).
+   JS sets --tmk-stagger-i per child; delay = index * 60ms, capped so long grids don't feel sluggish. */
+.tmk-js .tmk-reveal-stagger > *{opacity:0;transform:translateY(16px);transition:opacity var(--motion-narrative) var(--ease-out),transform var(--motion-narrative) var(--ease-out);transition-delay:calc(min(var(--tmk-stagger-i, 0), 8) * 60ms)}
+.tmk-reveal-stagger.is-visible > *{opacity:1;transform:none}
+
+/* Transition-only utility, for state changes that don't need a travel distance (hover-adjacent UI, not narrative). */
+.tmk-transition{transition:opacity var(--motion-transition) var(--ease-out),background var(--motion-transition) var(--ease-out),transform var(--motion-transition) var(--ease-out)}
+
+/* Reduced motion — belt-and-suspenders on top of the token-level 0ms collapse (tokens/motion.css):
+   reveal utilities must never leave content invisible if a browser/JS timing edge case is hit. */
+@media (prefers-reduced-motion: reduce) {
+	.tmk-js .tmk-reveal, .tmk-js .tmk-reveal-stagger > * { opacity: 1; transform: none; transition: none; }
+}
+
+/* PROGRESSIVE ENHANCEMENT (production-polish pass).
+   Both hidden states above are scoped to .tmk-js, a class an inline script in inc/refinements.php
+   sets on <html> in wp_head. This file's own comment already stated the requirement - reveal
+   utilities must never leave content invisible if a browser/JS timing edge case is hit - but only
+   the reduced-motion case was guarded. Ungated, opacity:0 is the DEFAULT state of the Homepage's
+   city bands and both of its card grids, so if js/animations/reveal.js fails to run for any reason
+   (404 after a bad deploy, a JS error earlier in the footer, an extension or content blocker) the
+   whole content area renders blank while the server still returns HTTP 200. Gating the hidden
+   state on JS being confirmed alive turns that from a blank page into simply no animation, which
+   is the correct failure mode for decoration.
+   SPECIFICITY: .tmk-js .tmk-reveal is (0,2,0), which now TIES with .tmk-reveal.is-visible and had
+   to keep losing to it - it does, on source order, because .is-visible is declared after. The
+   reduced-motion rule was (0,1,0) and would have been outranked, so it was raised to (0,2,0) as
+   well. Do not reorder this file without re-checking both ties. */

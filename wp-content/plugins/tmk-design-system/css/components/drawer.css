@@ -1,0 +1,14 @@
+/* TMK Drawer — shared edge-anchored overlay (mobile nav, filters, search on mobile).
+   Direct translation of components/overlays/Drawer.jsx. Anchors: left | right | bottom. */
+.tmk-drawer-scrim{position:fixed;inset:0;z-index:90;background:rgba(20,14,8,0.30)}
+.tmk-drawer-scrim[hidden]{display:none}
+.tmk-drawer{position:fixed;top:0;bottom:0;z-index:91;background:var(--color-surface);box-shadow:var(--elevation-overlay);overflow:auto}
+.tmk-drawer[hidden]{display:none}
+.tmk-drawer--left{left:0;width:340px;max-width:88vw;animation:tmk-slide-left var(--motion-transition) var(--ease-out)}
+.tmk-drawer--right{right:0;width:340px;max-width:88vw;animation:tmk-slide-right var(--motion-transition) var(--ease-out)}
+.tmk-drawer--bottom{left:0;right:0;top:auto;bottom:0;max-height:82vh;border-radius:var(--radius-soft) var(--radius-soft) 0 0;animation:tmk-slide-bottom var(--motion-transition) var(--ease-out)}
+@keyframes tmk-slide-left{from{transform:translateX(-24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes tmk-slide-right{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes tmk-slide-bottom{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+.tmk-drawer__close-row{display:flex;justify-content:flex-end;padding:var(--space-3) var(--space-3) 0}
+.tmk-drawer__close{width:36px;height:36px;border-radius:var(--radius-pill);border:none;background:var(--tatami-200);cursor:pointer;color:var(--ink);font-size:15px;line-height:1}

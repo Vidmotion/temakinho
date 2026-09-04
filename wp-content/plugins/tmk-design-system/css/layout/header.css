@@ -1,0 +1,235 @@
+/* TMK Header — layout layer: the site-chrome region built from Header.jsx / MegaMenu.jsx /
+MobileNav.jsx. Lives in css/layout/, not css/components/, because it's a singleton page-shell
+region (composes components) rather than a reusable widget. Shared pieces it composes (CTA,
+Accordion, Drawer, skip-link, .tmk-mobile-only) live in css/components/ and css/utilities/ —
+never redefine them here. */
+
+.tmk-header-root { position: relative; z-index: 40; }
+
+.tmk-header{display:flex;align-items:center;gap:var(--space-6);padding:18px var(--space-6);background:var(--color-surface);border-bottom:1px solid var(--color-border-default);transition:padding var(--motion-transition) var(--ease-out)}
+.tmk-header.is-condensed{padding:10px var(--space-6)}
+.tmk-header__logo{flex-shrink:0;display:inline-flex;color:var(--ink)}
+.tmk-header__logo svg{height:38px;width:auto;transition:height var(--motion-transition) var(--ease-out)}
+.tmk-header.is-condensed .tmk-header__logo svg{height:30px}
+/* The logo is an <a>, so the active theme's reset (hello-elementor reset.css) recolours it on
+hover and on activation - a:hover,a:active is (0,1,1) and beats the (0,1,0) rule above, and the
+mark is drawn in currentColor, so the whole logo turned the reset's navy. Pinned to ink in every
+state: the brand mark has no hover colour, by design. */
+.tmk-header__logo:hover,
+.tmk-header__logo:focus,
+.tmk-header__logo:active{color:var(--ink)}
+
+.tmk-header__nav{display:flex;gap:var(--space-5);flex:1;justify-content:center;flex-wrap:wrap;align-items:center}
+.tmk-navlink{background:none;border:none;cursor:pointer;padding:8px 2px 10px;font-family:var(--font-structure);font-size:var(--text-caption);font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-text-primary);position:relative;display:inline-flex;align-items:center;gap:4px;transition:color var(--motion-feedback) var(--ease-out);text-decoration:none}
+.tmk-navlink:hover{color:var(--color-action-primary-on-light-hover)}
+.tmk-navlink.is-active{color:var(--color-action-primary-on-light)}
+
+/* ONE underline mechanism, for every state.
+
+There used to be two, both 2px, both drawn in the same 2px band immediately under the item: a
+border-bottom (transparent by default, accent on .is-active) declared here, and an ::after rule
+(scaleX(0) by default, animating in on hover) declared in css/refinements/shell.css. Two
+mechanisms drawing the same indicator is a duplicate by definition — they occupied the identical
+band, they were tuned independently, and either could be changed without the other following.
+The pseudo-element is now the single indicator and the border-bottom is gone. Only two things
+about it ever change: whether it is scaled in, and its colour — and its colour is not declared at
+all, it is currentColor, so the rule is ALWAYS exactly the colour of the label above it. The
+active item's ember and the hover ink therefore come from the existing colour tokens on
+.tmk-navlink, and no state can ever disagree with its own underline.
+
+The 2px the border used to occupy is now padding-bottom (8px -> 10px) and the rule is positioned
+at bottom:0 inside it, so the indicator sits in the same band, at the same distance from the text,
+and the nav item's total height is unchanged. */
+.tmk-navlink::after{
+content:"";
+position:absolute;
+left:0;
+right:0;
+bottom:0;
+height:2px;
+background:currentColor;
+transform:scaleX(0);
+transform-origin:left center;
+transition:transform var(--motion-transition) var(--ease-out);
+}
+.tmk-navlink.is-active::after,
+.tmk-navlink:hover::after,
+.tmk-navlink:focus-visible::after{transform:scaleX(1)}
+
+/* ...and only ONE item in the bar may show it at a time. The current page owns the rule at rest;
+the moment the pointer or the keyboard addresses another item, the rule follows the pointer and
+the current page hands it over. Nothing is lost by that: the active item keeps its ember TEXT
+throughout, so "you are here" is still on screen — the rule says "this one", the colour says
+"you are here", and the two never both claim the same sentence. :has() scopes it to a navlink
+actually being addressed, so hovering the gaps between items leaves the active rule alone. */
+.tmk-header__nav:has(.tmk-navlink:hover) .tmk-navlink.is-active:not(:hover)::after,
+.tmk-header__nav:has(.tmk-navlink:focus-visible) .tmk-navlink.is-active:not(:focus-visible)::after{transform:scaleX(0)}
+
+/* The Ristoranti trigger is a BUTTON element sitting in a bar of anchors, so it arrives carrying
+a chrome the anchors never get: the UA's own button appearance, plus — in this build — the active
+theme's reset (hello-elementor assets/css/reset.css), which paints EVERY button as a bordered
+pill and gives it a FILLED hover/focus state. Those reset rules are written as button:hover /
+button:focus, i.e. specificity (0,1,1), and therefore outrank the plain .tmk-navlink rules above
+at (0,1,0): that, and nothing in this design system, is what turned the trigger into a magenta
+primary button the moment it was opened or focused.
+Neutralised here one class deeper at (0,2,0), which beats (0,1,1) on the class count and so holds
+in EVERY state — default, hover, focus, active, expanded — with no !important and no state twins.
+Structure only: this block declares no colour and no border colour, so the navigation's colour
+language (css/refinements/shell.css) and the active item's 2px accent rule above stay in charge.
+line-height is pinned for both element types because the reset gives buttons 1.5 while the
+anchors inherit the body's --leading-body: that difference alone knocks the trigger off the
+nav's shared baseline. */
+.tmk-header__nav .tmk-navlink{
+-webkit-appearance:none;
+appearance:none;
+background:none;
+background-color:transparent;
+border-radius:0;
+box-shadow:none;
+line-height:var(--leading-caption);
+white-space:nowrap;
+text-align:center;
+}
+
+/* The chevron is the ONE licensed difference between the trigger and its neighbours. */
+.tmk-navlink--mega svg{flex-shrink:0;transition:transform var(--motion-feedback) var(--ease-out)}
+.tmk-navlink--mega[aria-expanded="true"] svg{transform:rotate(180deg)}
+
+.tmk-header__utility{display:flex;align-items:center;gap:var(--space-4);flex-shrink:0}
+.tmk-icon-btn{background:none;border:none;cursor:pointer;color:var(--color-text-primary);padding:4px;display:inline-flex}
+
+/* Mega menu — MegaMenu.jsx's content, relaid out (production layout pass).
+
+FULL-BLEED PANEL, CONTAINED COLUMNS. The panel spans the viewport because it is part of the
+chrome, but its columns are held to --container-wide and centred on the same axis as the logo and
+the nav, so the menu reads as a continuation of the header instead of a band of text shoved out to
+the window edges. padding-inline:max() does that with no extra wrapper, which keeps
+inc/header-render.php's markup contract intact.
+
+WHY MULTI-COLUMN AND NOT A GRID. The cities are seven groups of very different sizes (Milano has
+five restaurants, Bologna has one). A row-based grid gives every row the height of its tallest
+cell, which is what produced the dead half-panel under Bologna / Capo d'Orlando / Lione while
+Milano set the row height. Columns balance on height instead of on rows: each city block stays
+whole (break-inside:avoid) and the fill order packs them, so the panel keeps an equal column
+rhythm and one consistent bottom edge with no holes in it. */
+.tmk-megamenu{
+position:absolute;
+left:0;
+right:0;
+top:100%;
+background:var(--color-surface-raised);
+border-bottom:1px solid var(--color-border-default);
+box-shadow:var(--elevation-overlay);
+padding-block:var(--space-7) var(--space-4);
+padding-inline:var(--page-inset);
+column-count:4;
+column-gap:var(--space-6);
+}
+.tmk-megamenu[hidden]{display:none}
+/* Below the wide bound the four tracks stop being readable columns and start being cramped ones.
+(The nav itself is hidden under 1024px, so no query below that is needed here.) */
+@media (max-width:1279px){.tmk-megamenu{column-count:3}}
+
+/* A city and its restaurants are ONE indivisible group: never split across a column break, and
+separated from the next group by a full --space-7 so the eye reads city-then-its-restaurants
+before it reads across. */
+.tmk-megamenu__col{
+break-inside:avoid;
+display:grid;
+gap:var(--space-3);
+margin:0 0 var(--space-7);
+min-width:0;
+}
+
+/* The city is the column heading, not a label: the Voice face two full steps above the restaurant
+names (--text-h3 vs --text-body-small), closed by a hairline that ends the heading and opens the
+list. The rule carries the grouping, so no box, no fill and no badge is needed to do it. */
+.tmk-megamenu__col h3,.tmk-megamenu__city{
+margin:0;
+padding-bottom:var(--space-3);
+border-bottom:1px solid var(--color-border-default);
+font-family:var(--font-voice);
+font-weight:var(--weight-voice);
+font-size:var(--text-h3);
+line-height:var(--leading-h3);
+letter-spacing:var(--tracking-voice);
+color:var(--color-text-primary);
+}
+
+/* One row per restaurant: the name in a fluid first track, Prenota in an auto track pinned to the
+column's right edge. justify-content:space-between (the rule this replaces) measured Prenota from
+the end of each NAME, so it landed in a different place on every line and moved again whenever a
+name wrapped to two. Two tracks give it one rail per column, and the same rail in every column.
+The hairline sits on every row, including the single-restaurant cities, so the rhythm is identical
+in all seven groups instead of appearing only where a list happened to be long. */
+.tmk-megamenu__col ul{list-style:none;margin:0;padding:0;display:block}
+.tmk-megamenu__col li{
+display:grid;
+grid-template-columns:minmax(0,1fr) auto;
+align-items:baseline;
+column-gap:var(--space-4);
+padding-block:var(--space-3);
+border-bottom:1px solid color-mix(in srgb,var(--color-border-default) 45%,transparent);
+}
+.tmk-megamenu__col li:last-child{border-bottom:0}
+
+/* The concept dot is lifted out of the text flow into a reserved gutter, so a restaurant with no
+concept (Linate) starts on exactly the same left edge as one with a dot — in the flow it was
+pulling every unbadged name 15px left of its own column. */
+.tmk-megamenu__col li a{
+position:relative;
+display:block;
+min-width:0;
+padding-left:18px;
+color:var(--color-text-secondary);
+font-family:var(--font-structure);
+font-size:var(--text-body-small);
+line-height:var(--leading-body-small);
+text-decoration:none;
+transition:color var(--motion-feedback) var(--ease-out);
+}
+.tmk-megamenu__col li a:hover{color:var(--color-text-primary);text-decoration:underline;text-underline-offset:3px}
+.tmk-megamenu__dot{position:absolute;left:0;top:0.5em;width:7px;height:7px;border-radius:50%;background:var(--color-accent-concept);display:block}
+
+/* Prenota is the panel's secondary action, not its subject: caption size in the Structure face,
+quiet by default, and it spends the accent only when it is addressed. */
+.tmk-megamenu__book{
+justify-self:end;
+font-family:var(--font-structure);
+font-size:var(--text-caption);
+font-weight:var(--weight-structure-bold);
+letter-spacing:var(--tracking-caps);
+text-transform:uppercase;
+color:var(--color-text-secondary);
+text-decoration:none;
+white-space:nowrap;
+transition:color var(--motion-feedback) var(--ease-out);
+}
+.tmk-megamenu__book:hover{color:var(--color-action-primary-on-light);text-decoration:underline;text-underline-offset:3px}
+
+/* Mobile nav — direct translation of MobileNav.jsx (Accordion/Drawer rules are shared, not repeated here) */
+.tmk-mobilenav{display:grid;gap:var(--space-4);padding:var(--space-5)}
+.tmk-mobilenav__link{color:var(--color-text-primary);font-family:var(--font-voice);font-weight:var(--weight-voice-soft);font-size:var(--text-h4);min-height:44px;display:flex;align-items:center;border-bottom:1px solid var(--color-border-default);text-decoration:none}
+/* Same reset leak as the logo, in the drawer: a:hover,a:active (0,1,1) beat the (0,1,0) rule above
+and every mobile nav label turned navy on touch. The mobile nav speaks the desktop nav's language,
+so its pressed/hover colour is the chrome hover token, nothing else. */
+.tmk-mobilenav__link:hover,
+.tmk-mobilenav__link:focus,
+.tmk-mobilenav__link:active{color:var(--color-chrome-nav-hover)}
+
+/* Responsive — Design Foundations breakpoints (mobile <600, tablet >=600, desktop >=1024) */
+@media (max-width: 1023px) {
+.tmk-header__nav { display: none; }
+}
+
+/* Reflow — WCAG 1.4.10.
+* At 320 CSS px the chrome measured 374px: 32px gutters both sides, a 32px gap and a utility
+* row (two 44px controls plus the booking CTA) that is deliberately flex-shrink:0. The result
+* was a horizontally scrolling page on the narrowest supported viewport. The row keeps every
+* affordance and every 44px touch target - it only tightens its own rhythm.
+*/
+@media (max-width: 400px) {
+.tmk-header { gap: var(--space-3); padding-inline: var(--space-4); }
+.tmk-header__utility { gap: var(--space-2); }
+.tmk-header__utility .tmk-cta--sm { padding-inline: var(--space-4); }
+}

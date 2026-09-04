@@ -1,0 +1,147 @@
+# ==========================================================================
+# Temakinho — repository sorgente per Dokploy
+#
+# Regola generale: in Git entra SOLO codice custom e sorgenti di progetto.
+# Core WordPress, plugin/temi di terze parti, contenuti, database, upload,
+# cache, backup e segreti restano fuori: vengono forniti dall'immagine
+# ufficiale WordPress, installati privatamente in Dokploy o importati
+# separatamente nei volumi persistenti (vedi DEPLOYMENT.md).
+# ==========================================================================
+
+# --- Sistema operativo / editor ------------------------------------------
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# --- Segreti e configurazioni locali -------------------------------------
+.env
+.env.*
+!.env.example
+wp-config.php
+wp-config-local.php
+wp-config-*.php
+!wp-config-sample.php
+auth.json
+*.pem
+*.key
+*.p12
+
+# --- Ambiente locale (Local by Flywheel / Claude Code) -------------------
+local-xdebuginfo.php
+local-phpinfo.php
+.__wtest
+.claude/
+.htaccess
+
+# --- WordPress core (fornito dall'immagine Docker ufficiale) -------------
+wp-admin/
+wp-includes/
+/index.php
+/license.txt
+/readme.html
+/xmlrpc.php
+/wp-activate.php
+/wp-blog-header.php
+/wp-comments-post.php
+/wp-config-sample.php
+/wp-cron.php
+/wp-links-opml.php
+/wp-load.php
+/wp-login.php
+/wp-mail.php
+/wp-settings.php
+/wp-signup.php
+/wp-trackback.php
+wp-content/index.php
+wp-content/plugins/index.php
+wp-content/themes/index.php
+
+# --- Runtime, contenuti e dati personali ---------------------------------
+wp-content/uploads/
+wp-content/cache/
+wp-content/upgrade/
+wp-content/upgrade-temp-backup/
+wp-content/languages/
+wp-content/backup*/
+wp-content/ai1wm-backups/
+wp-content/updraft/
+wp-content/w3tc-config/
+wp-content/advanced-cache.php
+wp-content/object-cache.php
+wp-content/db.php
+wp-content/debug.log
+wp-content/*.log
+*.log
+
+# --- Dump database e archivi --------------------------------------------
+*.sql
+*.sql.gz
+*.sql.zip
+*.sqlite
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.7z
+*.rar
+
+# --- Backup, snapshot, build storiche, QA --------------------------------
+*.bak
+*.bak-*
+*.orig
+*.rej
+*.old
+_BUILD/
+_QA/
+_ARCHIVE/
+TMK OLD WEBSITE/
+**/qa-screenshots/
+**/screenshots/
+node_modules/
+vendor/
+.cache/
+dist/
+build/
+
+# ==========================================================================
+# Plugin: tutto escluso tranne il plugin custom
+# ==========================================================================
+wp-content/plugins/*
+!wp-content/plugins/tmk-design-system/
+!wp-content/plugins/tmk-design-system/**
+
+# ...ma dentro il plugin custom restano fuori backup e file di sistema
+wp-content/plugins/tmk-design-system/**/*.bak
+wp-content/plugins/tmk-design-system/**/*.bak-*
+wp-content/plugins/tmk-design-system/**/.DS_Store
+wp-content/plugins/tmk-design-system/**/*.log
+
+# ==========================================================================
+# Temi: nessun tema custom in questo progetto.
+# hello-elementor / twentytwenty* sono di terze parti e vanno installati
+# nell'ambiente Dokploy (vedi DEPLOYMENT.md).
+# Se in futuro nascesse un child theme realmente modificato, aggiungere qui
+# l'eccezione, es.:
+#   !wp-content/themes/tmk-child/
+#   !wp-content/themes/tmk-child/**
+# ==========================================================================
+wp-content/themes/*
+
+# ==========================================================================
+# File che DEVONO restare tracciati
+#
+# Non ignorati da nessuna regola sopra, elencati per chiarezza:
+#   .gitignore  .dockerignore  .env.example
+#   Dockerfile  docker-compose.yml  DEPLOYMENT.md  CLAUDE.md
+#   TMK DOCUMENTS/            (documenti legali e allergeni, sorgente)
+#   wp-content/plugins/tmk-design-system/   (riammesso sopra)
+#
+# Unica eccezione necessaria, perche' intercettata da `.env.*`:
+# ==========================================================================
+!.env.example

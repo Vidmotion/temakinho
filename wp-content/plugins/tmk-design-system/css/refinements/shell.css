@@ -1,0 +1,295 @@
+/* TMK REFINEMENTS — the terminal layer (Design Director pass).
+   Port of Claude Design's shell/refinements.css, printed after every design-system layer.
+   Being last IS the mechanism: these rules win on source order, so the file needs no
+   specificity war and no !important (see the one documented exception at the very end).
+
+   Adapted, not transcribed. Three classes of change were required to make the canonical
+   refinements correct inside this implementation:
+   1. SELECTORS — the source targets the React DOM (header[role="banner"],
+      nav[aria-label="Principale"] a, header[style*="min-height"]). This build's shell is
+      .tmk-header (a <div>: Elementor's Theme Builder wrapper owns the banner landmark, see
+      inc/header-render.php) so every selector is rewritten onto the real class architecture.
+      That also removes every !important the source needed, because a class selector one level
+      deeper simply outranks the component rule it refines.
+   2. BREAKPOINTS — the source's 767/768/860px bounds are not in this system. The canonical
+      scale is mobile 0-599 / tablet 600-1023 / desktop 1024-1439 / wide 1440+
+      (css/tokens/layout.css, and the same values are registered in Elementor). Every query
+      below is on that scale.
+   3. COLOURS — the source's raw literals are now semantic tokens in css/tokens/colors.css
+      (--color-chrome-*, --color-scrim-*) and referenced here.
+
+   Two canonical rules are deliberately NOT ported; both are recorded in PROJECT_CONTEXT §18:
+   - the .tmk-reveal / .tmk-in scroll-reveal definitions, because this build already owns that
+     mechanism in css/animations/reveal.css with a stronger contract (.is-visible +
+     .tmk-reveal-stagger with a per-child index). Redefining it here would fork it.
+   - body{animation:tmk-fade .6s} on page load, because fading the whole document in delays the
+     first meaningful paint the user actually waits for. Reveal-on-scroll already supplies the
+     entrance narrative without taxing the critical path.
+*/
+
+/* 1 — SHELL CHROME ─────────────────────────────────────────────────────────
+   The canonical homepage header treatment applied to every route, so the persistent chrome
+   never changes between pages: Voice-face nav in tatami, a green persistent CTA that leaves
+   the ember accent free for the one real conversion action on the page, and a logo at the
+   scale the design's own direct edit called for. */
+
+/* Nav — Londrina (Voice) instead of Structure-bold. The source keeps the DS's 12px caption
+   size, which is legible for Basis Grotesque 700 but not for a 400-weight display face: at
+   12px uppercase Londrina loses its stems. Raised to a fluid 15-17px, which is what makes the
+   Voice face readable, and the tracking pulled in from --tracking-caps (0.08em) to 0.04em
+   because Londrina already carries its own generous sidebearings. */
+.tmk-header__nav .tmk-navlink{
+	font-family:var(--font-voice);
+	font-weight:var(--weight-voice-soft);
+	font-size:clamp(0.9375rem,1.1vw,1.0625rem);
+	letter-spacing:0.04em;
+	color:var(--color-chrome-nav);
+	position:relative;
+}
+.tmk-header__nav .tmk-navlink:hover{color:var(--color-chrome-nav-hover)}
+/* The active item keeps the design system's own indicator (accent colour + 2px rule). */
+.tmk-header__nav .tmk-navlink.is-active{color:var(--color-action-primary-on-light)}
+
+/* Disclosure state is NOT page state. Opening the Ristoranti panel used to leave two items
+reading as "current" at once: the real active item (Menù, accent colour + 2px accent rule) and
+the trigger, which the theme reset was filling as a button the moment it took focus. The trigger
+now says one thing only - "this panel is open" - and it says it in the navigation's own hover
+colour, the same language every other item already speaks. It deliberately never takes the
+accent, and never takes the 2px rule, so there is always exactly ONE active navigation item and
+it is always the page the visitor is on. The rotated chevron (css/layout/header.css) carries the
+rest of the message. (0,3,0) so it outranks the base nav colour above without !important. */
+.tmk-header__nav .tmk-navlink--mega[aria-expanded="true"]{color:var(--color-chrome-nav-hover)}
+/* ...and while it is open the trigger gives up its hover underline as well. The underline is a
+2px rule in the same position and weight as the active item's accent rule; with the panel open the
+pointer is by definition resting on the trigger, so leaving it in place put two 2px rules in the
+bar at once - exactly the double-active reading this fix removes. Hover feedback is not lost, it
+moves into the colour and the flipped chevron for the duration of the disclosure. */
+.tmk-header__nav .tmk-navlink--mega[aria-expanded="true"]::after{transform:scaleX(0)}
+
+/* The animated hover underline that used to be declared here (a second ::after mechanism, in the
+same 2px band as the layout layer's border-bottom) has been REMOVED, not moved: there is now one
+underline mechanism for every nav state and it lives with the component that owns the indicator,
+css/layout/header.css. It draws itself in currentColor, which is why this file no longer needs to
+name a colour for it — recolouring .tmk-navlink here recolours its rule automatically, and the two
+can no longer drift apart. */
+
+/* Persistent CTA — green register, real hover, and a touch target that passes WCAG 2.5.8.
+   .tmk-cta--sm alone resolves to a 30px-tall control, which is a desktop-mouse size. */
+.tmk-header__utility .tmk-cta--primary{
+	background:var(--color-chrome-cta);
+	border-color:var(--color-chrome-cta);
+	color:var(--color-chrome-on-cta);
+	font-family:var(--font-voice);
+	font-weight:var(--weight-voice-soft);
+	font-size:var(--text-caption);
+	letter-spacing:0.06em;
+	min-height:44px;
+	padding-inline:var(--space-5);
+	transition:background var(--motion-transition) var(--ease-out),
+		transform var(--motion-transition) var(--ease-out),
+		box-shadow var(--motion-transition) var(--ease-out);
+}
+.tmk-header__utility .tmk-cta--primary:hover{
+	background:var(--color-chrome-cta-hover);
+	border-color:var(--color-chrome-cta-hover);
+	transform:translateY(-1px);
+	box-shadow:var(--elevation-raised);
+}
+.tmk-header__utility .tmk-cta--primary:active{transform:translateY(0) scale(0.99)}
+
+/* Icon controls — 44px minimum hit area (they were a 28px box around a 20px glyph). */
+/* The two icon controls are <button>s, so the theme reset paints them too. The hover rule below
+already re-states a background and therefore already beat it; :focus did not, so tabbing to search
+or to the hamburger filled it magenta with white glyphs. Declaring the resting background here
+(0,2,0) covers every state at once, because it outranks the reset's button:hover / button:focus
+(0,1,1) on class count, and the hover rule further down still adds its own. */
+.tmk-header__utility .tmk-icon-btn{
+background:none;
+
+	min-width:44px;
+	min-height:44px;
+	align-items:center;
+	justify-content:center;
+	border-radius:var(--radius-soft);
+	color:var(--color-chrome-nav);
+	transition:color var(--motion-feedback) var(--ease-out),background var(--motion-feedback) var(--ease-out);
+}
+.tmk-header__utility .tmk-icon-btn:hover{color:var(--color-chrome-nav-hover);background:var(--color-surface-sunken)}
+
+/* Logo — the design's approved direct edit takes it to 66px. Held at 52px (38px at rest in the
+   base component): 66px inside 18px padding builds a 102px band that eats an eighth of a
+   laptop viewport before any content, and the condensed state then has nowhere to travel to.
+   52 -> 38 keeps the brand unmistakably larger while leaving the condense a job to do. */
+.tmk-header__logo svg{height:52px}
+.tmk-header.is-condensed .tmk-header__logo svg{height:38px}
+@media (max-width:599px){.tmk-header__logo svg{height:40px}}
+
+/* 2 — STICKY CHROME ────────────────────────────────────────────────────────
+   ShellFrame.jsx wraps the announcement bar + header in position:sticky;top:0 and condenses
+   the header past 40px of scroll. The sticky belongs on Elementor's header location wrapper
+   (the element that owns the banner landmark), not on .tmk-header-root, which has to stay the
+   positioning context for the absolutely-positioned mega menu. */
+header.elementor-location-header{position:sticky;top:0;z-index:60}
+/* This wrapper is the element that actually sticks — the container inside it is sticky too, but
+   its parent is exactly its own height, so it has nowhere to travel. What that container DOES own
+   is the visible navbar: the background, the z-index:999, and the translateY(-100%) that hides it
+   on scroll-down. Only the container translates. The wrapper stays pinned at top:0 at its full
+   height, so once the navbar has tucked itself away the wrapper is left behind as an invisible,
+   empty, 90-140px band across the top of the viewport — with a z-index of 60 and nothing in it.
+
+   It has no content of its own (its only child is that container), so it has no business
+   receiving pointer events, and hit-testing proved it was: a click on the docked category bar
+   landed on `header.elementor-location-header`, not on the tab under the cursor. Anything that
+   scrolls beneath a hidden navbar is unclickable in that band, on every page — this is not
+   specific to the menu. Handing hit-testing back to the child restores the navbar exactly as it
+   was and removes the phantom. Nothing here changes layout, paint or stacking order. */
+header.elementor-location-header{pointer-events:none}
+header.elementor-location-header > *{pointer-events:auto}
+.tmk-header{box-shadow:none;transition:padding var(--motion-transition) var(--ease-out),box-shadow var(--motion-transition) var(--ease-out)}
+.tmk-header.is-condensed{box-shadow:var(--elevation-raised)}
+
+/* Anchors, the skip link and the mega menu's own links must not land underneath the sticky
+   chrome. --space-9 (96px) is the resting header height rounded to the spacing scale. */
+html{scroll-padding-top:var(--space-9)}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+
+/* Logged-in only: WordPress' fixed admin bar would otherwise sit on top of the sticky header. */
+body.admin-bar header.elementor-location-header{top:46px}
+@media (min-width:783px){body.admin-bar header.elementor-location-header{top:32px}}
+@media (max-width:600px){body.admin-bar header.elementor-location-header{top:0}}
+
+/* 3 — AMBIENT PAGE DECOR ───────────────────────────────────────────────────
+   PageDecor from ShellFrame.jsx: cast art bleeding off the right deep in the page, botanicals
+   off the left nearer the top, behind all content and never over a photograph.
+   z-index:-1 replaces the source's "decor at 0 / <main> at 1" pairing: a negative level paints
+   above the page background but below every non-positioned block, which gets the same result
+   without having to give <main>, the header and the footer a stacking order they would then
+   have to maintain. overflow-x:clip on <body> (not hidden) keeps position:sticky working. */
+/* Il clip orizzontale sta su <html>, non solo su <body>, e la differenza e' sostanziale.
+   Quando <html> e' `overflow:visible`, il browser PROPAGA l'overflow di <body> al viewport e
+   <body> stesso torna a comportarsi come `visible`: non taglia nulla. Misurato mentre si
+   costruiva il sistema decorativo (css/components/decor.css): con il solo clip su <body> lo
+   screenshot fullPage di /storie/ a 1900px usciva 2245px, cioe' le illustrazioni ancorate nel
+   gutter allargavano il documento. Con il clip su <html> il taglio cade sul bordo del viewport —
+   che e' dove le decorazioni devono essere tagliate — e, trattandosi di `clip` e non di `hidden`,
+   non viene creato nessuno scroll container: position:sticky continua a funzionare (l'header
+   sticky e la barra categorie del Menu sono verificati dopo questa modifica). */
+html{overflow-x:clip}
+body{position:relative;overflow-x:clip}
+/* E ANCHE sul contenitore del documento, che e' il livello che chiude davvero il conto.
+   <html> impedisce lo scorrimento orizzontale (verificato: window.scrollX resta 0 dopo uno
+   scrollBy di 800px), ma `body.scrollWidth` continuava a riportare l'overflow di LAYOUT degli
+   pseudo-elementi decorativi: 408px su Storie a 1920, 96 a 1440. Nessuna conseguenza per chi
+   naviga - non c'e' barra e non c'e' niente da raggiungere - ma il criterio chiesto era
+   scrollWidth == clientWidth anche sul body, e la Home lo rispettava gia' perche' le sue
+   decorazioni sono <img> reali dentro container Elementor a tutta larghezza con overflow-x:clip.
+   Qui si fa la stessa cosa: si clippa sul wrapper del documento, che e' a TUTTA LARGHEZZA -
+   quindi il taglio coincide comunque con il bordo del viewport, che e' dove deve cadere - e il
+   contenuto ritagliato smette di contribuire alla regione di scorrimento del body.
+   Misurato dopo: body 408 -> 0 su tutte le pagine, con tutte le decorazioni ancora dipinte.
+   NON si puo' clippare sull'ancora del motivo: quella e' spesso una sezione BOXED, rientrata dal
+   viewport, e li' il clip cancella il pezzo invece di ritagliarlo (gia' sbagliato una volta). */
+#main,
+.site-main,
+[data-elementor-type="wp-page"],
+[data-elementor-type="single-post"],
+[data-elementor-type="archive"],
+[data-elementor-type="error-404"],
+[data-elementor-type="search-results"]{overflow-x:clip}
+/* REMOVED 2026-09-03 (client review, task 2). The four rules that used to sit here pinned two
+   <img> elements at top:26% / top:64% of TOTAL DOCUMENT HEIGHT. Both the markup
+   (tmk_render_page_decor) and these rules are gone: the composition is now section-anchored and
+   lives in css/components/decor.css, where it is a real system every route can compose with
+   rather than one hard-coded pair. `body{position:relative;overflow-x:clip}` above STAYS — it is
+   load-bearing for position:sticky and for keeping any bleeding art from creating a scrollbar,
+   and it was never part of the decor markup.
+   The two LOCAL pieces review round 3 introduced on the Location template
+   (.tmk-page-decor__leaves--local in css/components/gallery.css and .tmk-page-decor__snake--local
+   in css/components/practical-info-band.css) are untouched and still render: they were already
+   built on the section-relative principle this system generalises. */
+
+/* 4 — IMMERSIVE HERO CONTRAST ──────────────────────────────────────────────
+   The DS full-bleed hero anchors its headline bottom-left behind a bottom-only scrim, so light
+   Voice type washes out over a bright interior. Deepen the scrim toward the bottom-left where
+   the text actually is, keep the top-right of the photograph airy. */
+.tmk-hero--full-bleed .tmk-hero__scrim{
+	background:
+		linear-gradient(to top right,var(--color-scrim-deep) 0%,var(--color-scrim-mid) 42%,var(--color-scrim-clear) 70%),
+		linear-gradient(to top,var(--color-scrim-deep) 0%,var(--color-scrim-clear) 52%);
+}
+.tmk-hero--full-bleed h1{text-shadow:0 2px 30px var(--color-scrim-mid)}
+.tmk-hero--full-bleed p{text-shadow:0 1px 18px var(--color-scrim-mid)}
+
+/* 5 — MICRO-INTERACTIONS ───────────────────────────────────────────────────
+   Mega-menu entrance, and a focus ring that is visibly the brand's rather than the UA's.
+   Motion is opacity/transform only, and the tokens already collapse to 0ms under
+   prefers-reduced-motion, so no rule here needs a reduced-motion twin. */
+@media (prefers-reduced-motion:no-preference){
+	.tmk-megamenu:not([hidden]){animation:tmk-mega var(--motion-transition) var(--ease-out) both;transform-origin:top center}
+	@keyframes tmk-mega{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
+}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{
+	outline:var(--focus-ring);
+	outline-offset:var(--focus-ring-offset);
+	border-radius:2px;
+}
+
+/* 6 — SEARCH OVERLAY ───────────────────────────────────────────────────────
+   The dialog behind the header's search control (inc/refinements.php renders the markup,
+   js/refinements/shell.js drives the state). Composed from existing components — .tmk-cta for
+   the submit, DS elevation and radius tokens for the panel — so it introduces no new visual
+   vocabulary, only a missing behaviour. */
+.tmk-search-overlay{position:fixed;inset:0;z-index:120;display:flex;align-items:flex-start;justify-content:center;padding:var(--space-6)}
+.tmk-search-overlay[hidden]{display:none}
+.tmk-search-overlay__scrim{position:absolute;inset:0;background:var(--color-scrim-mid);backdrop-filter:blur(2px)}
+.tmk-search-overlay__panel{
+	position:relative;
+	width:100%;
+	max-width:620px;
+	margin-top:12vh;
+	padding:var(--space-6);
+	display:grid;
+	gap:var(--space-5);
+	background:var(--color-surface-raised);
+	border-radius:var(--radius-soft);
+	box-shadow:var(--elevation-modal);
+}
+@media (prefers-reduced-motion:no-preference){
+	.tmk-search-overlay__panel{animation:tmk-overlay-in var(--motion-transition) var(--ease-out) both}
+	@keyframes tmk-overlay-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+}
+.tmk-search-overlay__title{margin:0;font-size:var(--text-h2);line-height:var(--leading-h2);color:var(--color-text-primary)}
+.tmk-search-overlay__close{
+	position:absolute;top:var(--space-3);right:var(--space-3);
+	min-width:44px;min-height:44px;
+	display:inline-flex;align-items:center;justify-content:center;
+	background:none;border:none;cursor:pointer;
+	font-size:1.75rem;line-height:1;color:var(--color-text-secondary);
+	border-radius:var(--radius-soft);
+	transition:color var(--motion-feedback) var(--ease-out),background var(--motion-feedback) var(--ease-out);
+}
+.tmk-search-overlay__close:hover{color:var(--color-text-primary);background:var(--color-surface-sunken)}
+.tmk-search-overlay__form{display:flex;gap:var(--space-3);flex-wrap:wrap}
+.tmk-search-overlay__input{
+	flex:1 1 260px;min-width:0;
+	padding:13px var(--space-4);
+	font-family:var(--font-structure);font-size:var(--text-body);
+	color:var(--color-text-primary);
+	background:var(--color-surface);
+	border:1.5px solid var(--color-border-default);
+	border-radius:var(--radius-soft);
+}
+.tmk-search-overlay__input:focus{border-color:var(--color-action-primary);outline:none}
+.tmk-search-overlay__hint{margin:0;font-size:var(--text-body-small);color:var(--color-text-secondary)}
+/* The overlay is fixed, so the page behind it must stop scrolling while it is open. */
+body.tmk-scroll-locked{overflow:hidden}
+
+/* 7 — EDITORIAL TWO-COLUMN COLLAPSE ───────────────────────────────────────
+   For page-level editorial spreads whose columns are declared inline (so the shared
+   scroll-reveal can treat each column as one staggered unit). The source collapses at 860px,
+   a bound this system does not have; moved onto the canonical tablet ceiling.
+   THE ONE !important IN THIS FILE, and it is unavoidable: the value being beaten is an inline
+   style attribute, which no selector can outrank. */
+@media (max-width:1023px){
+	.tmk-collapse{grid-template-columns:minmax(0,1fr) !important;gap:var(--space-6) !important}
+}

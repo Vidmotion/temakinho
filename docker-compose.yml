@@ -1,0 +1,120 @@
+# ==========================================================================
+# Temakinho — Compose per Dokploy
+#
+# Regole rispettate:
+#   - nessun `container_name` (li assegna Dokploy)
+#   - nessuna porta pubblicata sull'host
+#   - nessun bind mount assoluto del Mac o del server
+#   - solo volumi Docker nominati
+#   - nessun segreto: tutto arriva dall'ambiente (.env / pannello Dokploy)
+#   - nessuna configurazione di dominio, DNS o TLS: le gestisce Dokploy
+# ==========================================================================
+
+services:
+  wordpress:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    # Porta interna 80: Dokploy (Traefik) la raggiunge sulla rete condivisa.
+    expose:
+      - "80"
+    environment:
+      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST:-db:3306}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX:-wp_}
+      # Vuoto = debug disattivato. L'immagine ufficiale interpreta come vero
+      # ogni valore non vuoto, incluso "0".
+      WORDPRESS_DEBUG: ${WORDPRESS_DEBUG:-}
+
+      # Salt e chiavi: valorizzati in Dokploy, mai in Git.
+      WORDPRESS_AUTH_KEY: ${WORDPRESS_AUTH_KEY}
+      WORDPRESS_SECURE_AUTH_KEY: ${WORDPRESS_SECURE_AUTH_KEY}
+      WORDPRESS_LOGGED_IN_KEY: ${WORDPRESS_LOGGED_IN_KEY}
+      WORDPRESS_NONCE_KEY: ${WORDPRESS_NONCE_KEY}
+      WORDPRESS_AUTH_SALT: ${WORDPRESS_AUTH_SALT}
+      WORDPRESS_SECURE_AUTH_SALT: ${WORDPRESS_SECURE_AUTH_SALT}
+      WORDPRESS_LOGGED_IN_SALT: ${WORDPRESS_LOGGED_IN_SALT}
+      WORDPRESS_NONCE_SALT: ${WORDPRESS_NONCE_SALT}
+
+      # WP_HOME / WP_SITEURL non sono variabili native dell'immagine
+      # ufficiale: passano da WORDPRESS_CONFIG_EXTRA. Qui viene anche
+      # riconosciuto X-Forwarded-Proto, necessario perche' WordPress dietro
+      # il reverse proxy di Dokploy generi URL in https.
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_HOME', '${WORDPRESS_HOME}' );
+        define( 'WP_SITEURL', '${WORDPRESS_SITEURL}' );
+        if ( isset( $$_SERVER['HTTP_X_FORWARDED_PROTO'] ) && 'https' === $$_SERVER['HTTP_X_FORWARDED_PROTO'] ) {
+            $$_SERVER['HTTPS'] = 'on';
+        }
+        if ( isset( $$_SERVER['HTTP_X_FORWARDED_HOST'] ) ) {
+            $$_SERVER['HTTP_HOST'] = $$_SERVER['HTTP_X_FORWARDED_HOST'];
+        }
+        define( 'DISALLOW_FILE_EDIT', true );
+    volumes:
+      # Storage persistente, separato per tipo di dato.
+      - temakinho_uploads:/var/www/html/wp-content/uploads
+      # I plugin di terze parti (Elementor, Elementor Pro, ACF, Brevo,
+      # WP Mail SMTP) sono installati nell'ambiente e non in Git: il volume
+      # li fa sopravvivere ai redeploy. Il plugin custom viene comunque
+      # riscritto dall'immagine a ogni avvio.
+      - temakinho_plugins:/var/www/html/wp-content/plugins
+      # hello-elementor e gli altri temi arrivano da wordpress.org e restano
+      # nel volume, non nel repository.
+      - temakinho_themes:/var/www/html/wp-content/themes
+    networks:
+      - internal
+      - dokploy-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/wp-includes/js/wp-emoji-loader.min.js > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    # Nessuna porta pubblicata: il database e' raggiungibile solo dalla rete
+    # interna del progetto.
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - temakinho_db:/var/lib/mysql
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+volumes:
+  temakinho_db:
+  temakinho_uploads:
+  temakinho_plugins:
+  temakinho_themes:
+
+networks:
+  # Rete di progetto: nessuna porta esposta sull'host. Non e' marcata
+  # `internal: true` perche' WordPress deve poter raggiungere
+  # wordpress.org e il server licenze Elementor per aggiornamenti e
+  # attivazione.
+  internal:
+
+  # Rete condivisa creata da Dokploy: serve solo al servizio web perche'
+  # Traefik possa instradare il dominio. Il database non ne fa parte.
+  dokploy-network:
+    external: true

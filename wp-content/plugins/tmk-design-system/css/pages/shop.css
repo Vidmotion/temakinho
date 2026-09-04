@@ -1,0 +1,6 @@
+/* TMK Shop — composition-only layer for the editorial-commerce Shop (inc/shop-render.php). Reuses
+   the shared .tmk-stack and the .tmk-cover diptych (css/pages/story.css); only the featured
+   product's price treatment is specific to the Shop and lives here. */
+
+.tmk-shop-featured__buy{display:flex;align-items:baseline;gap:var(--space-5);margin-top:var(--space-2)}
+.tmk-shop-featured__price{font-family:var(--font-structure);font-weight:var(--weight-structure-bold);font-size:var(--text-h3);color:var(--color-text-primary)}

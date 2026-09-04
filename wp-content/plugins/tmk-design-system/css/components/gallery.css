@@ -1,0 +1,124 @@
+/* TMK Gallery - direct translation of components/content/Gallery.jsx.
+   Grid of square, clickable photographs, each opening the shared Modal as a lightbox.
+   The square crop is the design system's own gallery ratio role (--ratio-gallery, tokens/layout.css). */
+/* flex, not grid: a CSS Grid auto-fill/auto-fit track only collapses when NO row uses it, so a
+   short final row (e.g. 7 items = 5 + 2) still leaves visible dead space beside the trailing 2 -
+   grid tracks are shared down every row, flex rows are independent. flex-wrap lets EVERY row,
+   whether it holds 3 items (a location with no gallery gaps) or the last 2 of 7, grow to fill its
+   own width. flex-basis keeps the same 240px floor the grid version used. */
+.tmk-gallery__items{display:flex;flex-wrap:wrap;gap:var(--space-3)}
+.tmk-gallery__item{flex:1 1 240px;padding:0;border:none;background:var(--color-surface-sunken);border-radius:var(--radius-soft);overflow:hidden;cursor:zoom-in;aspect-ratio:var(--ratio-gallery);display:block}
+.tmk-gallery__item img{width:100%;height:100%;object-fit:cover;transition:transform var(--motion-transition) var(--ease-out)}
+.tmk-gallery__item:hover img{transform:scale(1.04)}
+
+/* carousel variant (client review §4) - real Elementor Pro Media_Carousel markup, rendered
+   standalone from per-post gallery_ids (inc/gallery-render.php::tmk_render_gallery_carousel()).
+   Elementor's own widget-media-carousel.min.css ships no border-radius, so this is additive, not
+   an override - the design system's one soft-radius token (8px; sharp 0 / soft 8px / pill 9999px
+   are the only three values that exist), applied at the component layer. */
+.elementor-carousel-image{border-radius:var(--radius-soft)}
+.elementor-thumbnails-swiper .elementor-carousel-image{border-radius:var(--radius-soft)}
+
+/* Media_Carousel is instantiated standalone (render_content() only, not the full widget
+   lifecycle) so it never gets a saved post CSS file - the per-instance dynamic CSS that
+   normally gives the thumbnail strip its size (media-carousel.php's `thumbs_ratio` control,
+   default '219' -> aspect-ratio:21/9 on .elementor-thumbnails-swiper .elementor-carousel-image)
+   never gets generated. Without it the thumb slides have no intrinsic height at all - 0px,
+   same collapse as the main swiper before the elementor-skin-slideshow class fix. Restoring
+   just Elementor's own stated default (not inventing a value) is enough; the main swiper's
+   height:450px default already ships in Elementor Pro's static widget-media-carousel.min.css
+   and needed no equivalent here. */
+.elementor-thumbnails-swiper .elementor-carousel-image{aspect-ratio:21/9}
+
+/* Client review: thumbnail strip needed room to breathe below the main image (§1) - a real
+   spacing step, not an arbitrary px value. */
+.elementor-thumbnails-swiper{margin-top:var(--space-3)}
+
+/* THE GREY VEIL (client review round 4, §2) - it is Elementor Pro's, not ours. Source:
+   elementor-pro/assets/css/widget-media-carousel.min.css
+     .elementor-skin-slideshow .elementor-thumbnails-swiper .swiper-slide:not(.swiper-slide-active):after
+       { background-color:rgba(0,0,0,.3); content:""; inset:0; position:absolute }
+   A flat 30% black square-cornered veil painted over EVERY thumbnail that is not the swiper's
+   own active slide - which is why it also carried the "wrong border-radius": the veil is a
+   pseudo-element on .swiper-slide (border-radius 0), sitting on top of an image that carries
+   --radius-soft (8px). Two further reasons it is wrong here: it keys off .swiper-slide-active
+   (the thumbs swiper's OWN active index), not .swiper-slide-thumb-active (the slide the MAIN
+   swiper is showing), so once the strip scrolls the veil lands on the current photograph too;
+   and this component already expresses inactive-ness with opacity, so the veil is a second,
+   conflicting dimming applied on top of the first.
+   content:none removes the box outright rather than making it transparent, so it costs no
+   paint at all. Specificity: Elementor's selector is (0,4,1) - four classes (:not() counts its
+   argument) plus one pseudo-element. Ours is (0,5,1) via .swiper, which .elementor-thumbnails-
+   swiper also carries - it wins outright, no !important, and it does not depend on load order.
+   NOTE this is a HOVER-INDEPENDENT rule; nothing about it, or about the two rules below,
+   touches :focus-visible, whose sitewide outline lives in css/base/base.css. */
+.tmk-gallery-carousel.elementor-skin-slideshow .elementor-thumbnails-swiper.swiper .swiper-slide::after{content:none}
+
+/* Thumbnail hover (§2) and active state (§3). Border reserved at full transparent width on
+   every thumb so the active border doesn't shift layout when it appears - the same reservation
+   now also carries the hover affordance. --motion-feedback (120ms) is the "immediate response
+   to interaction" role, ease-out for the entrance; the token collapses to 0ms under
+   prefers-reduced-motion sitewide, so no separate reduced-motion rule is needed here.
+
+   NO transform:scale ON HOVER (client review round 4, §3). The previous scale(1.03) grew a
+   143.2 x 61.4 thumbnail to 147.5 x 63.2 inside a .swiper-slide AND an .elementor-thumbnails-
+   swiper that are BOTH overflow:hidden (swiper's own core CSS - not something this component
+   can relax without breaking the slider's clipping contract), so the enlarged edge was cut:
+   measured 0.92px off the top and bottom and ~2.15px off each side. Giving the container room
+   to absorb the scale would mean padding the strip and re-deriving swiper's slide arithmetic;
+   the affordance is replaced instead with two that do not change the box at all - opacity to
+   full, and the already-reserved 2px border taking a visible colour. --radius-soft (8px) is
+   untouched; no fourth radius value is introduced. */
+.elementor-thumbnails-swiper .swiper-slide{cursor:pointer}
+.elementor-thumbnails-swiper .elementor-carousel-image{opacity:0.6;border:2px solid transparent;transition:opacity var(--motion-feedback) var(--ease-out),border-color var(--motion-feedback) var(--ease-out)}
+.elementor-thumbnails-swiper .swiper-slide:hover .elementor-carousel-image{opacity:1;border-color:var(--color-border-strong)}
+.elementor-thumbnails-swiper .swiper-slide-thumb-active .elementor-carousel-image{opacity:1;border-color:var(--color-action-primary)}
+
+/* Arrows (§4) - Elementor's own default is a bare ~90%-white chevron with no background,
+   floating directly over the photograph (widget-media-carousel + e-swiper core CSS,
+   .elementor-swiper-button{color:hsla(0,0%,93%,.9)}) - illegible against any light area, which
+   is the exact complaint. A real, opaque button surface makes contrast independent of whatever
+   photo is behind it. Selectors are chained to 3 classes (.tmk-gallery-carousel .swiper
+   .elementor-swiper-button) to MATCH Elementor core's own specificity
+   (.elementor-element .swiper .elementor-swiper-button, 0-3-0) - this stylesheet is enqueued
+   after Elementor's core CSS (inc/enqueue.php, priority 20), so an equal-specificity tie
+   resolves in our favour without !important, the same pattern already used for the hours-table
+   zebra-stripe and trust-band centering fixes elsewhere in this codebase. */
+.tmk-gallery-carousel .swiper .elementor-swiper-button{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);background:var(--color-surface-raised);box-shadow:var(--elevation-raised);color:var(--color-text-primary);transition:background-color var(--motion-feedback) var(--ease-out),color var(--motion-feedback) var(--ease-out)}
+.tmk-gallery-carousel .swiper .elementor-swiper-button-prev{left:var(--space-3)}
+.tmk-gallery-carousel .swiper .elementor-swiper-button-next{right:var(--space-3)}
+.tmk-gallery-carousel .swiper .elementor-swiper-button svg{fill:currentColor}
+.tmk-gallery-carousel .swiper .elementor-swiper-button:hover{background:var(--color-action-primary);color:var(--color-action-on-primary)}
+
+/* Edge fade (§5) - supplementary only. The buttons above already pass contrast on their own
+   (solid --color-surface-raised fill, not a transparent glass effect) - this is additive polish
+   for the rare very-light photograph, never the only thing making an arrow visible. Token-derived
+   colour only (the same warm-ink scrim stops already used for hero/card photo darkening
+   elsewhere), narrow enough and low enough opacity to never obscure the image itself. position:
+   relative is asserted at matching (0,2,0) specificity for the same load-order reason as above -
+   Elementor core's own rule sets this element to position:static. */
+.elementor-main-swiper:not(.elementor-thumbnails-swiper){position:relative}
+.elementor-main-swiper:not(.elementor-thumbnails-swiper)::before,
+.elementor-main-swiper:not(.elementor-thumbnails-swiper)::after{content:'';position:absolute;top:0;bottom:0;width:var(--space-9);pointer-events:none;z-index:0}
+.elementor-main-swiper:not(.elementor-thumbnails-swiper)::before{left:0;background:linear-gradient(to right,var(--color-scrim-mid),transparent)}
+.elementor-main-swiper:not(.elementor-thumbnails-swiper)::after{right:0;background:linear-gradient(to left,var(--color-scrim-mid),transparent)}
+
+/* Ambient decoration, relocated here for location pages only (client review §7). The sitewide
+   version (css/refinements/shell.css) positions by percentage of TOTAL document height, which
+   drifted over the atmosphere block's text on pages with different content lengths above it - a
+   local position measured against this container's own box can't drift the same way. Same
+   opacity/pointer-events/z-index contract as the sitewide piece, just anchored locally. overflow:
+   clip keeps the off-edge bleed from disturbing the carousel's own box. */
+.tmk-gallery-carousel--decorated{position:relative;overflow:clip}
+.tmk-page-decor__leaves--local{position:absolute;left:min(-40px,-3vw);bottom:-24px;width:clamp(120px,12vw,220px);height:auto;opacity:0.5;z-index:0;pointer-events:none}
+@media (max-width:599px){.tmk-page-decor__leaves--local{display:none}}
+
+/* full-bleed-scroll variant - a horizontal snap strip rather than a grid. */
+.tmk-gallery--full-bleed-scroll .tmk-gallery__items{display:flex;grid-template-columns:none;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:var(--space-2)}
+.tmk-gallery--full-bleed-scroll .tmk-gallery__item{width:min(72vw,480px);scroll-snap-align:start}
+
+/* Lightbox stage - the opened photograph. Height is capped so the panel never needs to scroll
+   on a laptop; the caption repeats the alt text as visible copy, which is what a lightbox is for. */
+.tmk-gallery__stage{margin:0;display:grid;gap:var(--space-3);justify-items:center}
+.tmk-gallery__stage img{max-width:100%;max-height:76vh;width:auto;border-radius:var(--radius-soft)}
+.tmk-gallery__stage figcaption{font-size:var(--text-body-small);color:var(--color-text-secondary);text-align:center;max-width:60ch}

@@ -1,0 +1,143 @@
+/* TMK Homepage — the PAGES layer (css/pages/), last stop before refinements.
+   Page-level composition only: the one --container-wide stack that pages/Homepage.jsx declares
+   inline, and the vertical rhythm between its rows. No component is styled here; every card,
+   banner and hero keeps its own file.
+
+   Why this file exists at all: enqueue.php documents the pages layer as "intentionally empty —
+   only add an entry when something is genuinely one-page-only". This qualifies. The rules below
+   previously lived at the bottom of css/components/card.css with a LAYER NOTE explaining that
+   they were parked there because the WordPress Plugin File Editor cannot create files. That
+   constraint is gone (PROJECT_CONTEXT §18), so they have moved to where the note said they
+   belonged, and card.css is back to being only about Card.
+
+   Canonical source (pages/Homepage.jsx), verbatim:
+     <div style={{ maxWidth:'var(--container-wide)', margin:'0 auto',
+                   padding:'var(--space-7) var(--space-6) var(--tmk-rhythm-airy)',
+                   display:'grid', gap:'var(--tmk-rhythm-structured)' }}>
+   That single wrapper holds the city stack AND the conversion band. Here they are two Elementor
+   containers, because one Elementor Container per page section is the locked convention
+   (PROJECT_CONTEXT Rule 15) and the section boundary is where an editor expects to click. The
+   wrapper is therefore reproduced as two halves of the same geometry: the city stack owns the
+   top padding and the inter-row gap, the conversion band owns the final gap and the wrapper's
+   airy bottom padding. Measured end to end the stack is identical to the source.
+*/
+
+/* The city stack — rows separated by the structured rhythm; no bottom padding, because the
+   conversion band below continues the same wrapper. */
+.tmk-city-bands{
+	max-width:var(--container-wide);
+	margin-inline:auto;
+	padding:var(--space-7) var(--space-6) 0;
+	display:grid;
+	gap:var(--tmk-rhythm-structured);
+}
+/* A CityBlock: the city's own 21:8 banner, then the tight row of its restaurants. */
+.tmk-city-bands__block{display:grid;gap:var(--space-5)}
+/* "Le altre città" — the single-location cities as one composed row rather than a series of
+   full-width bands, with a caption-scale label above it (the JSX's inline style object). */
+.tmk-city-bands__others{display:grid;gap:var(--space-6)}
+.tmk-city-bands__others-title{
+	margin:0;
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-action-primary-on-light);
+}
+
+/* The conversion band — the last row of the same canonical wrapper.
+   .e-con is needed in the selector, not for weight-flexing but because Elementor gives every
+   container a default inline padding and a boxed --content-width through that exact class; a
+   single class of our own would tie with it and lose or win on stylesheet order, which is not a
+   contract worth relying on. Two classes state the intent unambiguously. */
+.e-con.tmk-home-conversion{
+	max-width:var(--container-wide);
+	margin-inline:auto;
+	padding-block:var(--tmk-rhythm-structured) var(--tmk-rhythm-airy);
+	padding-inline:var(--space-6);
+}
+
+/* Legacy flat city section — the pre-composition [tmk_city_cards] shortcode, kept because the
+   shortcode is still registered and still renders correctly wherever it is used. Homepage-only,
+   so it belongs in this file rather than in the Card component. */
+.tmk-city-cards{display:grid;gap:var(--grid-gutter)}
+
+/* ===========================================================================
+   Homepage cards ADOPT the Card component (_BUILD/160, client review round 4).
+
+   Page #36's cards are native Elementor Containers + Image/Heading widgets, and they stay that
+   way. _BUILD/160 gives them the design system's own component classes (tmk-card,
+   tmk-card--overlay, tmk-card--city|--location, tmk-card__media|__body|__eyebrow|__title|
+   __action), so css/components/card.css styles them with the SAME rules that style the
+   "Altri ristoranti Temakinho" row on a Location page. That is an exact match by construction —
+   there is no second copy of the scrim, the type roles, the chip or the hover to keep in sync.
+
+   Only three bridges are needed, because Elementor's markup differs from tmk_render_card()'s in
+   exactly three ways. Nothing below re-declares a value the component already owns.
+   =========================================================================== */
+
+/* 1 — Elementor puts _css_classes on the widget WRAPPER. So `tmk-card__title` lands on a
+       <div class="elementor-element … tmk-card__title">, and the real <h3> sits one level down
+       inside .elementor-widget-container, where base.css's own h1–h6 rules (font-family,
+       font-size, weight, tracking) beat plain inheritance. `font:inherit` hands the wrapper's
+       computed type straight through to it; letter-spacing needs saying explicitly because
+       base.css sets it on the element too. This is the same wrapper-vs-child trap CLAUDE.md
+       already records for the §131 measurement pass, solved once here instead of per role. */
+.tmk-hp-card .elementor-widget-heading .elementor-heading-title{
+	font:inherit;
+	letter-spacing:inherit;
+	color:inherit;
+	text-transform:inherit;
+	text-shadow:inherit;
+	margin:0;
+}
+
+/* 2 — the photograph is an Image widget, so there is one .elementor-widget-container between
+       .tmk-card__media (which the component absolutely positions to inset:0) and the <img> that
+       card.css sizes with object-fit. Without a height on the intermediate wrapper the image has
+       nothing to cover. */
+.tmk-hp-card .tmk-card__media .elementor-widget-container{height:100%}
+
+/* 3 — there is no .tmk-card__scrim element to render: an empty Elementor Container would carry
+       its own default padding and read as a stray box in the editor's structure panel. The scrim
+       is a pseudo-element instead, from the same two scrim tokens the component's own rule
+       resolves to (--color-scrim-clear is rgba(20,14,8,0), --color-scrim-veil is rgba(20,14,8,.55)
+       — identical output to card.css's `transparent 30% -> rgba(20,14,8,0.55) 78%`).
+       z-index is needed here and only here: ::after is generated as the card's LAST box, so
+       without it the scrim would paint over the body instead of under it. The body is lifted to
+       z-index 2 by its own Elementor control (visible in the UI), the media stays at auto. */
+.tmk-hp-card::after{
+	content:'';
+	position:absolute;
+	inset:0;
+	z-index:1;
+	pointer-events:none;
+	background:linear-gradient(to right,var(--color-scrim-clear) 30%,var(--color-scrim-veil) 78%);
+}
+
+/* The two bands keep a one-line standfirst. The target component has NO slot for it, so this is
+   the one place the homepage card is not a pure copy — the text was kept rather than dropped,
+   because deleting copy is not a styling decision.
+
+   It does need containing, though, and the width is derived from the scrim rather than picked:
+   the gradient above is transparent until 30% and full strength at 78%, so anything left of
+   ~62% of the card sits over an undarkened photograph. Measured at 375 the sentence was the
+   widest item in the body, stretched it to the full card, and put its first half over the bright
+   part of the picture at roughly 1.9:1. Capping it at 38% keeps every line inside the scrimmed
+   zone at 768 and above.
+
+   Below 768 the card is on its 180px min-height floor and there is no room for a third text
+   block at any width — the stack already sits 6px from the top edge with the standfirst present.
+   It is hidden there, which is also exactly what the target card does at that size. The copy
+   stays in the page and in the Elementor editor; unhiding it is one line.
+
+   The cap needs five classes, and that is not weight-flexing. Elementor caps every widget in a
+   container with `.elementor.elementor .e-con > .elementor-widget{max-width:100%}` — a selector
+   it DELIBERATELY inflates by repeating `.elementor`, giving (0,4,0). A one- or two-class rule
+   here loses silently: `max-width` kept computing to `100%` and the cap did nothing at all,
+   caught by measuring the rendered width, not by reading the stylesheet. (0,5,0) beats it
+   outright, with no !important and no dependency on which stylesheet loads last.
+   `display:none` below needs none of this — Elementor sets no display on the wrapper. */
+.elementor .tmk-hp-card .e-con.e-con>.tmk-hp-card__supporting{max-width:calc(38% - var(--space-6))}
+@media (max-width:767px){.tmk-hp-card__supporting{display:none}}

@@ -1,0 +1,106 @@
+/* TMK typography — two roles only: voice (Londrina Solid) and structure (Basis Grotesque).
+   Modular scale 1.25, base 16px, 8 steps, paired line-heights (10_SPEC Ch.8). */
+:root{
+  /* Fallback order matters for perceived stability during the font-display:swap window
+     (tokens/fonts.css): Impact/Arial Black are near-universal on macOS/Windows and much closer
+     in weight/width to Londrina Solid's black slab shapes than system-ui, so the swap-in moment
+     causes less layout jump on --text-display/--text-h1 (both fluid clamp() sizes). */
+  --font-voice:'Londrina Solid',Impact,'Arial Black',system-ui,sans-serif;
+  --font-structure:'Basis Grotesque','Helvetica Neue',Arial,sans-serif;
+
+  /* Size steps (responsive behavior baked into the role token, not per-page) */
+  --text-display:clamp(3.052rem,calc(2rem + 3.5vw),4.768rem);
+  --text-h1:clamp(2.441rem,calc(1.8rem + 2vw),3.052rem);
+  /* h2/h3 made FLUID 2026-09-03 (task 3). --text-display and --text-h1 were already
+     clamp()ed, so on a wide page the section titles were the only headings that did not
+     grow with the measure - the hierarchy flattened exactly where the page got wider.
+     Same 1.25 ratio; the clamp FLOOR is the previous fixed value, so nothing renders
+     smaller than before at any viewport. */
+  --text-h2:clamp(1.953rem,1.55rem + 1.25vw,2.441rem);
+  --text-h3:clamp(1.563rem,1.35rem + 0.66vw,1.831rem);
+  --text-h4:1.25rem;
+  --text-body:1rem;
+  --text-body-small:0.875rem;
+  --text-caption:0.75rem;
+
+  /* Paired line-heights (tighter at scale, looser at reading sizes) */
+  --leading-display:0.98;
+  --leading-h1:1.02;
+  --leading-h2:1.08;
+  --leading-h3:1.15;
+  --leading-h4:1.25;
+  --leading-body:1.55;
+  --leading-body-small:1.5;
+  --leading-caption:1.4;
+
+  /* Voice-face tuning (Londrina reads best with a whisper of tracking) */
+  --tracking-voice:0.01em;
+  --tracking-caps:0.08em;
+  /* Wider caps tracking, for a short uppercase label sitting ON a photograph rather than on a
+     flat surface. Measured off the reference composition (a 12px label at 1.6px tracking =
+     0.133em); at the label sizes this system uses, 0.08em is not enough separation once the
+     letterforms compete with image detail underneath them. */
+  --tracking-caps-wide:0.13em;
+
+  /* Weights */
+  --weight-voice:900;      /* display/hero headlines */
+  --weight-voice-soft:400; /* voice at smaller scale */
+  --weight-structure:400;
+  --weight-structure-medium:500;
+  --weight-structure-bold:700;
+}
+
+/* ===========================================================================
+   ROLE STEPS added 2026-09-03 (client review "chiusura progetto", task 3).
+
+   AUDIT FIRST, per the brief: no new face was introduced and none was needed.
+   The project ships exactly two families, both self-hosted from
+   assets/fonts/ and declared in tokens/fonts.css - Londrina Solid (100/300/
+   400/900) and Basis Grotesque (300/400/500/700/900). Elementor loads no
+   Google font of its own (the kit's globals name these two families and
+   nothing else) and the theme adds none. So this block only adds the STEPS
+   the role hierarchy was missing; every value below is on the existing 1.25
+   modular scale, none of them invents a family or a weight without a matching
+   @font-face.
+
+   What was missing and why it read as "everything has the same weight":
+     - h5/h6 had NO size at all. base.css sets font-family/weight on h1-h6 but
+       only sized h1-h4, so an <h5> fell back to the UA's 0.83em - Londrina
+       Solid 900 rendered SMALLER than body text, which inverts the hierarchy
+       instead of extending it.
+     - the standfirst/lead role (the paragraph directly under a headline) was
+       being written as --text-h4 all over the codebase - a HEADING token used
+       for body copy. It now has its own name and its own line-height, so the
+       two can move independently.
+     - h2/h3 were fixed rem values while --text-display and --text-h1 are
+       fluid. On a 1440 page the section titles therefore shrank, in relative
+       terms, exactly where the page got wider. They are fluid now, over the
+       same 1.25 ratio, with the OLD value as the clamp floor - so nothing
+       gets smaller than it is today at any viewport, and the top end grows
+       the presence the brief asks for.
+     - the metadata role (byline, kicker, date, card meta) had no line-height
+       distinct from body. */
+:root{
+  /* Lead / standfirst - structure face at heading-4 scale, body line-height.
+     A body role, deliberately NOT --text-h4, even though they currently share
+     a size: one is a heading step, the other is reading copy. */
+  --text-lead:1.25rem;
+  --leading-lead:1.5;
+  /* Long-form reading at the lead step (article/job/event body copy, timeline). Kept as its
+     own role rather than folded into --leading-lead: a standfirst is two or three lines and
+     wants to sit tight under its title, a 900-word article at the same size wants air. The
+     1.7 is the value those pages already shipped - named here so the eight places that each
+     hard-coded it stop drifting apart. */
+  --leading-prose:1.7;
+
+  /* The two steps the scale stopped at. 1.125rem/1rem continue the ratio
+     downward and, crucially, keep h5/h6 ABOVE body size. */
+  --text-h5:1.125rem;
+  --text-h6:1rem;
+  --leading-h5:1.3;
+  --leading-h6:1.35;
+
+  /* Metadata - kicker, byline, date, card meta. Same size as caption, looser
+     leading because it is read as a line of prose, not as a label. */
+  --leading-meta:1.45;
+}

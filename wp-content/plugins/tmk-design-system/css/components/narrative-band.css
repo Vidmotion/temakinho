@@ -1,0 +1,20 @@
+/* TMK Narrative Band — direct translation of components/bands/NarrativeBand.jsx.
+   Mid-page storytelling beat; illustration motif optional. */
+.tmk-narrative-band{max-width:var(--container-narrow);margin:0 auto;padding:0 var(--space-5);display:grid;gap:var(--space-4)}
+.tmk-narrative-band--center{text-align:center;justify-items:center}
+.tmk-narrative-band--start{text-align:start;justify-items:start}
+.tmk-narrative-band__motif{max-width:220px}
+.tmk-narrative-band__title{font-size:var(--text-h2);line-height:var(--leading-h2);margin:0}
+/* Stepped up one size role (--text-body -> --text-h4, 1.25 ratio) for more presence, per
+   client review - the 560px prose cap is untouched, so line length stays exactly as approved. */
+.tmk-narrative-band__body{color:var(--color-text-secondary);font-size:var(--text-lead);line-height:var(--leading-lead);max-width:560px}
+
+/* Location template only (client review round 4, §5): the band's own `padding:0 var(--space-5)`
+   is a gutter for the SHORTCODE path, where the band can sit flush against the viewport. On the
+   Location single it is nested inside tmkloc_col, which already supplies the page's 32px gutter,
+   so the two stacked and pushed the description text 24px right of the breadcrumb, the practical
+   card, the menu label and the closing band - the "card is not on the same axis as the body text"
+   report. Scoped exactly like css/components/hero.css's own body.single-location override rather
+   than removed globally, because the homepage uses this same widget outside a gutter-bearing
+   column. The 560px prose measure and the 680px band max-width are untouched. */
+body.single-location .elementor-widget-tmk-narrative .tmk-narrative-band{padding-inline:0}

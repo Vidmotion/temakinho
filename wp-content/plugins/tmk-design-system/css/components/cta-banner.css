@@ -1,0 +1,8 @@
+/* TMK CTA Banner — direct translation of components/conversion/CTABanner.jsx.
+   Section-level conversion moment. variant: booking | newsletter | delivery (copy differs,
+   layout and styling are identical — see inc/cta-banner-render.php for the copy defaults). */
+.tmk-cta-banner{background:var(--color-surface-inverse);color:var(--color-text-inverse);border-radius:var(--radius-soft);padding:var(--space-8) var(--space-7);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-6)}
+.tmk-cta-banner__copy{max-width:560px}
+.tmk-cta-banner__title{font-size:var(--text-h2);line-height:var(--leading-h2);margin:0;color:var(--tatami-50)}
+.tmk-cta-banner__body{margin:var(--space-3) 0 0;color:var(--tatami-300);font-size:var(--text-body)}
+.tmk-cta-banner .tmk-cta--primary{flex-shrink:0}

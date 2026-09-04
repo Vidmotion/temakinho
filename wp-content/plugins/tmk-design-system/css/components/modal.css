@@ -1,0 +1,26 @@
+/* TMK Modal - direct translation of components/overlays/Modal.jsx.
+   "Focused blocking interaction - scrim, focus trap, Escape closes, focus returns to trigger."
+
+   Generic on purpose: the Gallery lightbox is its first consumer, but the same contract serves
+   any future dialog (a booking confirmation, a form's allergen sheet). Open/closed state is the
+   [hidden] attribute, exactly like Drawer, so the closed state costs no JS and survives a
+   scripting failure as "never opens" rather than "always open".
+
+   Behaviour lives in js/interactions/modal.js - the interactions layer, next to Drawer and
+   Accordion, because it is generic and multi-instance rather than one widget's own behaviour.
+
+   The fade keyframes stay here rather than in css/animations/: they are this component's own
+   entrance, and css/animations/ is reserved for motion shared ACROSS components (see the
+   docblock in inc/enqueue.php). Under prefers-reduced-motion the duration token collapses to
+   0ms, so no reduced-motion twin is needed. */
+.tmk-modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:var(--space-5)}
+.tmk-modal[hidden]{display:none}
+.tmk-modal__scrim{position:absolute;inset:0;background:var(--color-scrim-veil);animation:tmk-modal-fade var(--motion-transition) var(--ease-out)}
+.tmk-modal__panel{position:relative;background:var(--color-surface-raised);border-radius:var(--radius-soft);box-shadow:var(--elevation-modal);padding:var(--space-6);max-width:720px;width:100%;max-height:88vh;overflow:auto;animation:tmk-modal-fade var(--motion-transition) var(--ease-out)}
+.tmk-modal__close{position:absolute;top:12px;right:12px;width:36px;height:36px;border:none;border-radius:var(--radius-pill);background:var(--tatami-200);color:var(--ink);font-size:15px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background var(--motion-feedback) var(--ease-out)}
+.tmk-modal__close:hover{background:var(--tatami-300)}
+@keyframes tmk-modal-fade{from{opacity:0}to{opacity:1}}
+
+/* Lightbox modifier - the panel is a frame around one photograph, so it drops the card padding
+   and lets the image define the box (the source renders the image as the modal's only child). */
+.tmk-modal--lightbox .tmk-modal__panel{max-width:min(1080px,96vw);padding:var(--space-5);background:var(--color-surface-raised)}

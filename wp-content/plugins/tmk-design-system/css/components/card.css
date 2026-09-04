@@ -1,0 +1,184 @@
+/* TMK Card — direct translation of components/cards/Card.jsx. One base contract, two visual
+   shapes: --overlay (variant location/city — photo-led, text over a gradient) and the default
+   content shape (variant menu/story/event/job — media on top, content block below). Whole card
+   is one click target (<a>). Hover state (image zoom, shadow raise, chip/link color) is CSS-only
+   — Card.jsx's hover-driven inline styles become plain :hover rules here. */
+
+.tmk-card{display:block;text-decoration:none;color:inherit;border-radius:var(--radius-soft);overflow:hidden;box-shadow:var(--elevation-raised);transition:box-shadow var(--motion-transition) var(--ease-out);cursor:pointer;background:var(--color-surface-raised)}
+.tmk-card:hover{box-shadow:var(--elevation-overlay)}
+.tmk-card__media{overflow:hidden}
+.tmk-card__media img{width:100%;height:100%;object-fit:cover;transition:transform var(--motion-transition) var(--ease-out)}
+.tmk-card:hover .tmk-card__media img{transform:scale(1.04)}
+
+/* Content shape (menu/story/event/job) */
+.tmk-card--content .tmk-card__media{aspect-ratio:var(--ratio-card)}
+.tmk-card--content .tmk-card__body{padding:var(--space-4) var(--space-4) var(--space-5);display:grid;gap:var(--space-2)}
+.tmk-card--content .tmk-card__eyebrow{font-size:var(--text-caption);font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-accent-concept-on-light)}
+.tmk-card--content .tmk-card__title{font-family:var(--font-voice);font-weight:var(--weight-voice-soft);font-size:var(--text-h4);line-height:1.15}
+.tmk-card--content .tmk-card__meta{font-size:var(--text-body-small);color:var(--color-text-secondary);display:flex;justify-content:space-between;gap:var(--space-3)}
+.tmk-card--content .tmk-card__price{color:var(--color-text-primary);white-space:nowrap;font-weight:var(--weight-structure-bold)}
+.tmk-card__tags{display:flex;gap:var(--space-1);flex-wrap:wrap}
+.tmk-card__tag{padding:2px 10px;border-radius:var(--radius-pill);border:1px solid var(--color-border-default);font-size:0.65rem;letter-spacing:0.04em;text-transform:uppercase;color:var(--color-text-secondary)}
+.tmk-card--content .tmk-card__action{margin-top:var(--space-1);font-size:var(--text-caption);font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-action-primary-on-light)}
+.tmk-card--content:hover .tmk-card__action{color:var(--color-action-primary-on-light-hover)}
+
+/* ============================================================================================
+   OVERLAY SHAPE (location / city / job) — UNIFIED WITH THE REFERENCE COMPOSITION, 2026-09-03.
+
+   THE PROBLEM. The site had two photographic-card languages. The Homepage was rebuilt by hand
+   into `.tmk-hp-card` / `.tmk-hp-band` (its own Elementor containers, its own Custom CSS) and
+   drifted away from this component, which is what still renders the restaurant cards on Storie,
+   on the City pages, in the Location page's "Altri ristoranti" row and on the Careers hub.
+   Measured side by side, they disagreed on: border-radius (18 vs 8), the scrim (a bottom-up ink
+   gradient vs a left-to-right one), the title (uppercase, 0.9 leading vs sentence case, 0.95),
+   the label tracking (1.6px vs 0.96px), the action chip (13px / 10-20 padding vs 10.4px / 6-14)
+   and the hover (a lift plus a wide soft shadow vs a shadow alone).
+
+   The closing brief settles it: one visual language, with the Homepage as the art-direction
+   reference. This component is therefore aligned TO the Homepage — the Homepage itself is not
+   touched, and cannot be: it carries none of these classes (verified in the served HTML — zero
+   occurrences of tmk-card, tmk-card--overlay, tmk-card__scrim on `/`). Everything below is
+   measured from the reference, then snapped to this system's own scales.
+
+   WHAT IS DELIBERATELY *NOT* IDENTICAL, and why — two things, both stated rather than hidden:
+
+   1. THE ACTION CHIP STAYS ON ember-600, not the reference's ember-500. Cream on ember-500 is
+      3.47:1 and cream on ember-600 is 4.65:1 (recomputed this session; the same figures
+      tokens/colors.css records at line 36). The chip's label is 14px bold — under WCAG that is
+      NORMAL text, not large text, so the 4.5:1 threshold applies and ember-500 fails it. This is
+      the one place the reference is not followed, because "WCAG AA is met at the semantic-token
+      level" is a governing rule of this system and a colour cannot be un-failed by copying it.
+
+   2. THE EYEBROW STAYS tatami-200, not full cream. The reference sets label and title to the
+      same inverse text colour; here they are one step apart, which is what keeps the label
+      subordinate to the title — the exact hierarchy the same brief asks for in its typography
+      section. Same family, same palette, one step of separation.
+
+   Off-scale reference values are snapped, not copied: 22/40px insets -> --space-5/--space-6,
+   a 10-20px chip padding -> --space-3/--space-5, a 13px chip label -> --text-body-small, a 6px
+   chip radius -> --radius-soft. The one value that could NOT be snapped without losing the
+   language is the card radius itself, which is why --radius-media exists (see
+   tokens/elevation.css for that decision in full).
+
+   SIZING IS CONTEXT, NOT LANGUAGE. min-height and aspect-ratio are unchanged: the brief itself
+   allows layout to differ by context, and this component renders in 1-, 2-, 3- and 4-up grids
+   where the reference only ever renders full-width or 4-up. The aspect-ratio + min-height
+   pairing below is also load-bearing against a documented horizontal-overflow bug — see the
+   note on .tmk-card--overlay.
+   ============================================================================================ */
+
+/* max-width:100% is load-bearing, not decorative. The overlay shapes pair min-height with
+   aspect-ratio (21/8 for city, --ratio-card for location). Once min-height clamps the block
+   size, the block size becomes definite and the browser derives the INLINE size from the
+   ratio instead: on a 340px mobile grid track the city card resolved to 180 x 21/8 = 472.5px
+   wide and pushed the whole document into horizontal scroll (found at 375px in the Homepage
+   audit, 2026-07-29). Clamping the inline size keeps the min-height floor working as intended
+   - the card simply stops honouring the ratio below ~473px, which is exactly why the
+   min-height exists. */
+.tmk-card--overlay{position:relative;min-height:180px;max-width:100%;border-radius:var(--radius-media)}
+.tmk-card--overlay.tmk-card--city{aspect-ratio:21/8}
+.tmk-card--overlay.tmk-card--location{aspect-ratio:var(--ratio-card)}
+.tmk-card--overlay .tmk-card__media{position:absolute;inset:0}
+
+/* THE SCRIM — two layers, both from the scrim token family, reproducing the reference exactly.
+   Layer 1 (bottom-up) is what actually makes the type readable: it is nearly clear across the
+   top 35% of the photograph and reaches --color-scrim-deep at the very bottom, where the text
+   block sits. Layer 2 (left-to-right) is the softer wash the reference adds on top, which
+   weights the composition towards the right-hand corner the body is anchored in without
+   darkening the picture's subject on the left.
+   Order matters: the first background paints ON TOP, so the directional wash goes first. */
+.tmk-card--overlay .tmk-card__scrim{
+	position:absolute;
+	inset:0;
+	border-radius:inherit;
+	background:
+		linear-gradient(to right, var(--color-scrim-clear) 34%, var(--color-scrim-mid) 84%),
+		linear-gradient(to top, var(--color-scrim-deep) 0%, var(--color-scrim-hint) 65%);
+}
+
+.tmk-card--overlay .tmk-card__body{position:absolute;right:var(--space-6);bottom:var(--space-5);left:var(--space-6);text-align:right;display:grid;gap:var(--space-3);justify-items:end}
+.tmk-card--overlay .tmk-card__eyebrow{font-size:var(--text-caption);font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps-wide);text-transform:uppercase;color:var(--tatami-200);line-height:1.2}
+.tmk-card--overlay .tmk-card__title{font-family:var(--font-voice);font-weight:var(--weight-voice);line-height:0.9;letter-spacing:0;text-transform:uppercase;color:var(--tatami-50);text-shadow:0 1px 14px rgba(20,14,8,0.28);text-wrap:balance}
+.tmk-card--overlay.tmk-card--city .tmk-card__title{font-size:clamp(2rem, 4vw, 3.4rem)}
+.tmk-card--overlay.tmk-card--location .tmk-card__title{font-size:clamp(1.6rem, 3vw, 2.4rem)}
+.tmk-card--overlay .tmk-card__action{display:inline-block;padding:var(--space-3) var(--space-5);border-radius:var(--radius-soft);background:var(--color-action-primary);color:var(--color-action-on-primary);font-family:var(--font-structure);font-size:var(--text-body-small);font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps);text-transform:uppercase;line-height:1;transition:background var(--motion-feedback) var(--ease-out)}
+.tmk-card--overlay:hover .tmk-card__action{background:var(--color-action-primary-hover)}
+.tmk-card--overlay .tmk-card__concept-badge{position:absolute;top:var(--space-4);left:var(--space-4);padding:4px 12px;border-radius:var(--radius-pill);background:var(--color-accent-concept);color:var(--tatami-50);font-size:0.65rem;font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps);text-transform:uppercase}
+
+/* HOVER — the reference's micro-lift. The transform is on the card, so it also lifts the
+   photograph, the scrim and the body as one object; the image zoom below is kept because this
+   component renders a real <img> (the reference paints its photo as a CSS background and
+   physically cannot zoom it). Both are reversible and both are switched off under
+   prefers-reduced-motion, where a lift is exactly the kind of movement that has to go. */
+.tmk-card--overlay{transition:box-shadow var(--motion-transition) var(--ease-out),transform var(--motion-transition) var(--ease-out)}
+.tmk-card--overlay:hover,.tmk-card--overlay:focus-visible{transform:translateY(-3px);box-shadow:var(--elevation-lift)}
+@media (prefers-reduced-motion: reduce){
+	.tmk-card--overlay:hover,.tmk-card--overlay:focus-visible{transform:none}
+	.tmk-card:hover .tmk-card__media img{transform:none}
+}
+
+/* Responsive crop — the 21:8 city banner is a poster ratio that needs poster width. Below
+   tablet it degrades into a letterbox slot roughly 130px tall in which the photograph is
+   unreadable and the overlaid name has nowhere to sit, so the crop opens up to 16:9 there.
+   The ratio is a presentation decision about the same image, not a different image: nothing
+   about the component's contract, markup or data changes. */
+@media (max-width: 599px) {
+	.tmk-card--overlay.tmk-card--city { aspect-ratio: 16/9; }
+}
+
+/* CardGrid — direct translation of components/cards/CardGrid.jsx: one shared, configurable
+ * container for any set of Cards.
+ *
+ * The JSX resolves its "columns" prop to repeat(auto-fill, minmax(max(220,900/columns)px,1fr)),
+ * i.e. a density hint rather than a track count, and this file used to reproduce that formula
+ * literally. Replaced during the polish pass, for a reason that was visible on the Homepage:
+ * auto-fill guarantees the track WIDTH, never how many items land on the last row. Milano has
+ * five restaurants and the grid resolved to four tracks, so the fifth card sat alone, flush
+ * left, under a full row - reading as a layout bug rather than as a fifth restaurant.
+ *
+ * The model here is an explicit column count per breakpoint, with the row centred:
+ *   - the count is a real API again (--tmk-cols-desktop / --tmk-cols-tablet, set per instance
+ *     by tmk_render_card_grid() in inc/card-render.php), not a width the browser reverse-
+ *     engineers into a count;
+ *   - flex-wrap + justify-content:center means an incomplete last row is CENTRED under the
+ *     grid, which reads as composition instead of as an orphan;
+ *   - flex-grow stays 0, so cards never stretch to fill a short row and every card on the page
+ *     is exactly the same size. That is what makes a row of four and a row of one look like one
+ *     grid.
+ *
+ * The -0.5px in the basis is a rounding guard: sub-pixel container widths can make N tracks that
+ * sum to exactly 100% wrap to N-1. Half a pixel per card is invisible and removes that class of
+ * bug entirely.
+ */
+.tmk-card-grid{
+	--tmk-cols:1;
+	display:flex;
+	flex-wrap:wrap;
+	justify-content:center;
+	gap:var(--grid-gutter);
+}
+.tmk-card-grid > *{
+	flex:0 1 calc((100% - (var(--tmk-cols) - 1) * var(--grid-gutter)) / var(--tmk-cols) - 0.5px);
+	min-width:0;
+}
+@media (min-width: 600px)  { .tmk-card-grid { --tmk-cols: var(--tmk-cols-tablet, 2); } }
+@media (min-width: 1024px) { .tmk-card-grid { --tmk-cols: var(--tmk-cols-desktop, 3); } }
+
+/* LAYER NOTE (resolved): the Homepage's page-level composition (.tmk-city-bands*,
+   .tmk-city-cards) used to sit below this line, parked here only because the Plugin File Editor
+   could not create css/pages/homepage.css. That file now exists and owns those rules; this one
+   is about the Card component and nothing else. */
+
+/* No-photograph fallback for the overlay shapes.
+   A city or location term with no hero_image_id renders an empty .tmk-card__media, so the only
+   thing behind the light Voice title is the card's own cream --color-surface-raised. Measured on
+   the Homepage (Reggio Calabria, Capo d'Orlando): title 1.00:1, eyebrow 1.21:1 - the text was
+   literally invisible, not merely low-contrast. The scrim above cannot rescue it, because it is
+   built to darken a PHOTOGRAPH and a 0.55 ink wash over cream is still a light ground.
+   Filling the card with the inverse surface restores exactly the condition the scrim and the
+   --tatami-50 title already assume - dark ground, light type - using the same token the CTA
+   Banner and the Footer stand on, so a photo-less city reads as a deliberate ink tile instead of
+   a broken card. Measured after: title 14.6:1, eyebrow 11.9:1.
+   Expressed with :has() rather than a PHP modifier class so it protects every caller of Card,
+   including future ones that forget to pass media, with no change to the render contract. */
+.tmk-card--overlay:not(:has(.tmk-card__media)){background:var(--color-surface-inverse)}

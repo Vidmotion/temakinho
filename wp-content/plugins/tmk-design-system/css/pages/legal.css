@@ -1,0 +1,109 @@
+/* TMK Legal — composition-only layer for on-site legal pages (inc/legal-render.php). Illustration-
+   bare, a calm narrow reading column with a raised table-of-contents card, per pages/Legal.jsx. */
+
+.tmk-legal{max-width:calc(var(--container-narrow) + 2 * var(--page-gutter));margin:0 auto;padding-block:var(--space-8) var(--space-9);padding-inline:var(--page-gutter)}
+
+.tmk-legal__header{margin:var(--space-6) 0 var(--space-7)}
+.tmk-legal__eyebrow{margin:0 0 var(--space-3);font-family:var(--font-structure);font-weight:var(--weight-structure-bold);font-size:var(--text-caption);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-action-primary-on-light)}
+.tmk-legal__title{margin:0 0 var(--space-3);font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-h1);line-height:1;color:var(--color-text-primary)}
+.tmk-legal__updated{margin:0;font-family:var(--font-structure);font-size:var(--text-caption);line-height:var(--leading-meta);color:var(--color-text-secondary)}
+
+.tmk-legal__toc{margin:0 0 var(--space-8);padding:var(--space-5);background:var(--color-surface-raised);border-radius:var(--radius-soft);box-shadow:var(--elevation-resting)}
+.tmk-legal__toc ol{margin:0;padding-left:1.2em;display:grid;gap:var(--space-2)}
+.tmk-legal__toc a{font-family:var(--font-structure);font-size:var(--text-body);color:var(--color-action-primary-on-light)}
+
+.tmk-legal__body h2{margin:var(--space-7) 0 var(--space-3);font-family:var(--font-structure);font-weight:var(--weight-structure-bold);font-size:var(--text-h3);line-height:1.2;color:var(--color-text-primary)}
+.tmk-legal__body p,.tmk-legal__body li{font-family:var(--font-structure);font-size:var(--text-body);line-height:1.65;color:var(--color-text-primary);text-wrap:pretty}
+.tmk-legal__body p{margin:0 0 var(--space-3)}
+.tmk-legal__body ul,.tmk-legal__body ol{margin:0 0 var(--space-5);padding-left:1.3em;display:grid;gap:var(--space-2)}
+.tmk-legal__body a{color:var(--color-action-primary-on-light);text-underline-offset:2px}
+
+/* ==========================================================================
+   TMK LEGAL DOCS — PATCH 10 (2026-09-04) · griglia di card documentali
+   Resa da inc/legal-docs-render.php ([tmk_legal_docs]) dentro la pagina /allergeni/.
+
+   Solo token esistenti: nessun colore, font, raggio o bottone nuovo. Il bottone e' il
+   componente .tmk-cta--primary (components/cta.css), che a >=600px misura 44px di altezza
+   (13px+13px di padding + 12px di caption + bordo) e sotto i 600px va a piena larghezza per
+   la regola touch-target gia' presente in cta.css.
+
+   FLEX E NON GRID, per la ragione gia' messa a verbale sulla galleria: una traccia grid
+   `auto-fill` collassa solo se NESSUNA riga la usa, quindi con 5 card l'ultima riga lascia
+   tracce vuote. Le righe flex sono indipendenti: 3+2 a 1120px, 2+2+1 a 768, 1 per riga a 390,
+   e ogni riga riempie la propria larghezza. */
+
+.tmk-legal-docs__grid{
+	list-style:none;
+	margin:0;
+	padding:0;
+	display:flex;
+	flex-wrap:wrap;
+	gap:var(--space-5);
+}
+
+.tmk-legal-doc{
+	flex:1 1 300px;
+	min-width:0;
+	display:flex;
+	flex-direction:column;
+	gap:var(--space-3);
+	padding:var(--space-5);
+	background:var(--color-surface-raised);
+	border:1px solid var(--color-border-default);
+	border-radius:var(--radius-soft);
+	box-shadow:var(--elevation-resting);
+}
+
+.tmk-legal-doc__kind{
+	margin:0;
+	font-family:var(--font-structure);
+	font-size:var(--text-caption);
+	line-height:var(--leading-meta);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-text-secondary);
+}
+
+.tmk-legal-doc__title{
+	margin:0;
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-h5);
+	line-height:var(--leading-h5);
+	color:var(--color-text-primary);
+	text-wrap:pretty;
+}
+
+/* La CTA si appoggia al fondo della card: card di altezza diversa restano allineate in basso. */
+.tmk-legal-doc__cta{
+	margin-top:auto;
+	align-self:flex-start;
+	min-height:44px;
+}
+
+/* Cap di colonna: senza questo, l'ultima card di una riga incompleta si allarga a tutta la
+   larghezza disponibile (misurato: 945px a 1024 e 705px a 768, contro i 461/341 delle altre).
+   Con il cap la riga incompleta resta allineata a sinistra alla stessa misura delle altre,
+   come fanno tutte le altre griglie di card del sito. Il gap e' --space-5 (24px). */
+@media (min-width:600px){
+	.tmk-legal-doc{max-width:calc(50% - (var(--space-5) / 2))}
+}
+/* 1025px e' il tier desktop del Kit (mobile <=767 / tablet 768-1024 / desktop 1025+): li' la
+   colonna di contenuto e' larga almeno 961px e tre card da 300 di base ci stanno. Con la soglia
+   a 1300 la fascia 1025-1299 restava a due colonne larghe (misurato a 1280: 357/357/357/548/548). */
+@media (min-width:1025px){
+	.tmk-legal-doc{max-width:calc(33.333% - (var(--space-5) * 2 / 3))}
+}
+
+@media (max-width:599px){
+	.tmk-legal-doc{flex-basis:100%}
+	.tmk-legal-doc__cta{align-self:stretch}
+}
+
+.tmk-legal-docs__empty{
+	margin:0;
+	font-family:var(--font-structure);
+	font-size:var(--text-body);
+	line-height:var(--leading-body);
+	color:var(--color-text-secondary);
+}

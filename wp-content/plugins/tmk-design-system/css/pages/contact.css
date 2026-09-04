@@ -1,0 +1,26 @@
+/* --container-body / --body-inset, non --container-page / --page-gutter (2026-09-04):
+   la colonna di contenuto delle pagine interne va sulla griglia della Home (1120 centrati,
+   160px di margine a 1440) - vedi css/tokens/layout.css. Header e footer restano su
+   --container-page, come sulla Home. */
+/* TMK Contact — composition-only layer for the Contact page (inc/contact-render.php). A warm,
+   intimate contained layout (no photo hero, per Contact.jsx): a header, then a two-column body of
+   the IntentForm + a raised "how to reach us" aside that collapses to one column on narrow screens. */
+
+.tmk-contact{max-width:calc(var(--container-body) + 2 * var(--page-gutter));margin:0 auto;padding-block:var(--space-8) var(--space-9);padding-inline:var(--page-gutter)}
+
+.tmk-contact__header{margin:var(--space-6) 0 var(--space-8)}
+.tmk-contact__eyebrow{margin:0 0 var(--space-3);font-family:var(--font-structure);font-weight:var(--weight-structure-bold);font-size:var(--text-caption);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-action-primary-on-light)}
+.tmk-contact__title{margin:0 0 var(--space-4);font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-display);line-height:0.95;color:var(--color-text-primary);max-width:640px;text-wrap:balance}
+.tmk-contact__lead{margin:0;max-width:var(--container-narrow);font-family:var(--font-structure);font-size:var(--text-lead);line-height:var(--leading-lead);color:var(--color-text-secondary);text-wrap:pretty}
+
+.tmk-contact__grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--space-8);align-items:start}
+
+/* ASIDE — raised card of real channels. */
+.tmk-contact__aside{background:var(--color-surface-raised);border-radius:var(--radius-soft);padding:var(--space-7);box-shadow:var(--elevation-raised)}
+.tmk-contact__aside-title{margin:0 0 var(--space-5);font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-h2);line-height:1;color:var(--color-text-primary)}
+.tmk-contact__channels{margin:0;display:grid;gap:var(--space-5)}
+.tmk-contact__channels dt{font-family:var(--font-structure);font-weight:var(--weight-structure-bold);font-size:var(--text-caption);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-text-secondary);margin-bottom:var(--space-1)}
+.tmk-contact__channels dd{margin:0;font-family:var(--font-structure);font-size:var(--text-body);line-height:1.5}
+.tmk-contact__social{margin-top:var(--space-6);display:flex;gap:var(--space-4)}
+.tmk-contact__social a{font-family:var(--font-structure);font-weight:var(--weight-structure-medium);font-size:var(--text-body);color:var(--color-action-primary-on-light)}
+.tmk-contact__note{margin:var(--space-6) 0 0;font-family:var(--font-structure);font-size:var(--text-body-small);line-height:1.55;color:var(--color-text-secondary)}

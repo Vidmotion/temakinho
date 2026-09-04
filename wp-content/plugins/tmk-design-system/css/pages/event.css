@@ -1,0 +1,388 @@
+/* --container-body / --body-inset, non --container-page / --page-gutter (2026-09-04):
+   la colonna di contenuto delle pagine interne va sulla griglia della Home (1120 centrati,
+   160px di margine a 1440) - vedi css/tokens/layout.css. Header e footer restano su
+   --container-page, come sulla Home. */
+/* TMK Events — composition-only layer for the Event Hub + Event Detail (inc/event-render.php).
+   The hub reuses the shared editorial .tmk-stack (css/pages/story.css). The detail mirrors the
+   Editorial Article's spatial grammar: a narrow reading column for the intro + narrative, widening
+   to the standard column for the gallery, practical facts, trust, booking and related events. */
+
+.tmk-event{
+	display:grid;
+	gap:var(--tmk-rhythm-structured);
+	padding:var(--space-7) 0 var(--space-9);
+}
+.tmk-event__column{max-width:calc(var(--container-narrow) + 2 * var(--page-gutter));margin:0 auto;padding-inline:var(--page-gutter);width:100%}
+.tmk-event__wide{max-width:calc(var(--container-body) + 2 * var(--page-gutter));margin:0 auto;padding-inline:var(--page-gutter);width:100%}
+
+/* INTRO — the lead paragraph, larger (the source's INTRODUCTION beat). */
+.tmk-event__intro p{
+	margin:0;
+	font-family:var(--font-structure);font-weight:var(--weight-structure-medium);
+	font-size:var(--text-h3);line-height:1.5;color:var(--color-text-primary);text-wrap:pretty;
+}
+
+/* NARRATIVE — prose in the reading column. */
+.tmk-event__body p{margin:0 0 var(--space-5);font-family:var(--font-structure);font-size:var(--text-lead);line-height:var(--leading-prose);color:var(--color-text-primary);text-wrap:pretty}
+.tmk-event__body p:last-child{margin-bottom:0}
+
+/* ═══════════════════════════════════════════════════════════════════════════════════════════
+   EVENTI — rework visivo 2026-09-04.
+
+   Il difetto non era una card sbagliata: era che TUTTE le card erano uguali. "Il prossimo
+   appuntamento" e le tre voci di calendario avevano lo stesso trattamento — immagine sopra,
+   testo sotto, stessa scala — quindi la pagina leggeva come una lista, non come un calendario
+   con un evento in testa. E fra le due sezioni non c'era nessun salto di gerarchia.
+
+   Qui si separano i due ruoli. L'evento in evidenza diventa un DITTICO orizzontale con la data
+   in evidenza e il titolo alla scala display: e' il prossimo appuntamento, deve occupare la
+   pagina. Le voci successive diventano card vere e proprie, compatte e uguali fra loro: sono un
+   archivio, e un archivio deve essere regolare.
+
+   Solo classi già presenti nel template #561. Nessun testo, data o immagine è stato cambiato:
+   cambia come vengono presentati, non cosa dicono.
+   ═══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── IL PROSSIMO APPUNTAMENTO ─────────────────────────────────────────────────────────────── */
+@media (min-width:1024px){
+	.tmk-event-featured .tmk-event-card{
+		display:grid;
+		grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);
+		align-items:center;
+		gap:clamp(var(--space-7),4vw,var(--space-9));
+	}
+}
+.tmk-event-featured .tmk-event-card img{
+	display:block;
+	width:100%;
+	/* height:auto NON e' ridondante. Una regola precedente (`.tmk-event-card img`) fissa
+	   height:220px, e un'altezza esplicita batte aspect-ratio a PRESCINDERE dalla specificita' -
+	   la mia regola, pur essendo piu' specifica, dichiarava solo aspect-ratio e quindi l'altezza
+	   restava 220px. Misurato: 590x220 invece dei 590x442 previsti, cioe' l'immagine
+	   dell'evento in evidenza era alta quanto quelle del calendario e la gerarchia che questa
+	   sezione doveva avere non esisteva. */
+	height:auto;
+	aspect-ratio:4/3;
+	object-fit:cover;
+	border-radius:var(--radius-media);
+	box-shadow:var(--elevation-raised);
+}
+/* La riga "tipo · data · ora" smette di essere una didascalia e diventa l'attacco della card:
+   e' l'informazione che si cerca su una pagina eventi. */
+.tmk-event-featured .tmk-event-card__eyebrow .elementor-heading-title{
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-body-small);
+	letter-spacing:var(--tracking-caps-wide);
+	text-transform:uppercase;
+	color:var(--color-action-primary-on-light);
+}
+/* Il titolo dell'evento in evidenza sale alla scala h1: e' il secondo livello della pagina dopo
+   l'H1 dell'hero e deve staccare nettamente dai titoli del calendario, che restano h3.
+   QUATTRO classi, e non e' esibizionismo: Elementor stampa il proprio CSS per-elemento come
+   `.elementor-561 .elementor-element-tmkev009 .elementor-heading-title` — specificita' (0,3,0).
+   Una regola a tre classi pareggia e perde sull'ordine dei fogli; a quattro vince, senza
+   !important. Misurato: con tre classi il titolo restava alla scala del calendario.
+   Non --text-display: in una colonna da ~530px i 76px del display mandano "Notte Carioca" a capo. */
+.tmk-event-featured .tmk-event-card .tmk-event-card__title .elementor-heading-title{
+	font-size:var(--text-h1);
+	line-height:var(--leading-h1);
+}
+.tmk-event-featured .tmk-event-card .tmk-event-card__eyebrow .elementor-heading-title{
+	font-size:var(--text-body-small);
+}
+.tmk-event-featured .tmk-event-card__venue p{
+	margin:0;
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-medium);
+	font-size:var(--text-lead);
+	color:var(--color-text-secondary);
+}
+.tmk-event-featured .tmk-event-card__excerpt p{max-width:52ch}
+
+/* ── IN CALENDARIO ────────────────────────────────────────────────────────────────────────── */
+/* Card vere: superficie, raggio fotografico, respiro interno. Prima erano immagine + testo
+   appoggiati sul fondo crema, senza contenitore: da qui la sensazione di "lista di blocchi". */
+.tmk-event-grid-wrap .tmk-event-card{
+	background:var(--color-surface-raised);
+	border-radius:var(--radius-media);
+	overflow:hidden;
+	box-shadow:var(--elevation-raised);
+	transition:box-shadow var(--motion-transition) var(--ease-out),transform var(--motion-transition) var(--ease-out);
+}
+.tmk-event-grid-wrap .tmk-event-card:hover{transform:translateY(-3px);box-shadow:var(--elevation-lift)}
+@media (prefers-reduced-motion:reduce){.tmk-event-grid-wrap .tmk-event-card:hover{transform:none}}
+.tmk-event-grid-wrap .tmk-event-card img{
+	display:block;
+	width:100%;
+	aspect-ratio:3/2;
+	object-fit:cover;
+}
+/* Il blocco di testo prende il padding della card, così il contenuto non tocca il bordo. */
+.tmk-event-grid-wrap .tmk-event-card > .e-con-inner > *:not(.elementor-widget-image),
+.tmk-event-grid-wrap .tmk-event-card > *:not(.elementor-widget-image){padding-inline:var(--space-5)}
+.tmk-event-grid-wrap .tmk-event-card > .e-con-inner > *:last-child,
+.tmk-event-grid-wrap .tmk-event-card > *:last-child{padding-bottom:var(--space-5)}
+.tmk-event-grid-wrap .tmk-event-card .elementor-widget-image{padding-inline:0}
+.tmk-event-grid-wrap .tmk-event-card__eyebrow .elementor-heading-title{
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-action-primary-on-light);
+}
+.tmk-event-grid-wrap .tmk-event-card__title .elementor-heading-title{
+	font-size:var(--text-h3);
+	line-height:var(--leading-h3);
+}
+
+
+/* ── QA visiva 2026-09-04 ────────────────────────────────────────────────────────────────── */
+
+/* La quarta card restava orfana su una seconda riga con due caselle vuote accanto: a 3 colonne
+   con 4 eventi il buco e' strutturale, non un caso. A 2 colonne i 4 eventi attuali formano una
+   griglia piena, e le card - 544px invece di 352 a 1120 di colonna - hanno finalmente il peso di
+   una pagina editoriale invece di quello di un archivio.
+   NOTA per il futuro: con un numero DISPARI di eventi resta comunque una casella vuota. E' una
+   proprieta' di qualunque griglia, non un difetto da inseguire. */
+/* Il numero di colonne NON si imposta qui. tmkev044 e' un container "grid" di Elementor: le sue
+   colonne escono come --e-con-grid-template-columns nella regola per-elemento (0,3,0) e una
+   regola di componente non le tocca. Una prima versione di questa riga puntava a .tmk-event-grid,
+   una classe che nel markup non esiste nemmeno: nessun errore, nessun effetto. Il valore vive in
+   _BUILD/192-eventi-grid.php. */
+
+/* VERIFICATO E NON CORRETTO: la banda scura di chiusura sembrava avere molto vuoto sotto il
+   bottone. Misurata, e' simmetrica (86.4px sopra e 86.4px sotto, banda 326px, contenuto 154px).
+   La sensazione di vuoto viene dal fatto che la banda e il footer sono dello stesso ink e si
+   leggono come un'unica area scura - esattamente come sulla Home, che e' il riferimento. Nessuna
+   modifica: sarebbe stata la correzione di un problema inesistente. */
+.tmk-event-conversion .tmk-event-conversion__body{max-width:56ch;margin-inline:auto}
+
+
+/* ═════════════════════════════════════════════════════════════════════════════════════════════
+   2026-09-04 — GLI EVENTI DIVENTANO DINAMICI
+
+   Il hub e il dettaglio avevano i cinque eventi seminati SCRITTI A MANO come container Elementor
+   (_BUILD/106): un evento creato in wp-admin non poteva comparire, uno cancellato non poteva
+   sparire. Ora i due blocchi arrivano da inc/event-blocks.php.
+
+   PERCHE' SERVONO REGOLE NUOVE E NON BASTAVANO QUELLE SOPRA: le regole precedenti sono scritte
+   contro il markup di ELEMENTOR (`.e-con-inner`, `.elementor-heading-title`,
+   `.elementor-widget-image`), che il PHP non produce. I valori qui sotto sono gli stessi -
+   stessi token, stesso raggio, stessa ombra, stessa scala tipografica - trascritti sulla
+   struttura vera. Le regole Elementor restano dov'erano: se un domani il template torna a
+   contenere card scritte a mano, continuano a funzionare.
+   ═════════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* Occhiello di sezione, condizionale: sta dentro allo shortcode perche' un titolo Elementor si
+   stampa anche quando sotto non c'e' niente. */
+.tmk-event-hub__label{
+	margin:0 0 var(--space-6);
+	font-family:var(--font-voice);
+	font-weight:var(--weight-voice);
+	font-size:var(--text-h2);
+	line-height:var(--leading-h2);
+	color:var(--color-text-primary);
+}
+
+/* ── card: base comune ───────────────────────────────────────────────────────────────────── */
+a.tmk-event-card{
+	display:block;
+	text-decoration:none;
+	color:inherit;
+	background:var(--color-surface-raised);
+	border-radius:var(--radius-media);
+	overflow:hidden;
+	box-shadow:var(--elevation-raised);
+	transition:box-shadow var(--motion-transition) var(--ease-out),transform var(--motion-transition) var(--ease-out);
+}
+a.tmk-event-card:hover{transform:translateY(-3px);box-shadow:var(--elevation-lift)}
+@media (prefers-reduced-motion:reduce){a.tmk-event-card:hover{transform:none}}
+a.tmk-event-card .tmk-event-card__media img{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover}
+.tmk-event-card__body{display:grid;gap:var(--space-2);padding:var(--space-5)}
+.tmk-event-card__kicker{
+	margin:0;
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-action-primary-on-light);
+}
+.tmk-event-card__title{
+	margin:0;
+	font-family:var(--font-voice);
+	font-weight:var(--weight-voice);
+	font-size:var(--text-h3);
+	line-height:var(--leading-h3);
+	color:var(--color-text-primary);
+}
+.tmk-event-card__venue{
+	margin:0;
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-medium);
+	font-size:var(--text-body);
+	color:var(--color-text-secondary);
+}
+.tmk-event-card__text{
+	margin:0;
+	font-family:var(--font-structure);
+	font-size:var(--text-body);
+	line-height:var(--leading-body);
+	color:var(--color-text-primary);
+	text-wrap:pretty;
+}
+
+/* ── in evidenza: due colonne, titolo alla scala h1, foto 4/3 senza contenitore ──────────── */
+a.tmk-event-card--featured{background:transparent;box-shadow:none;border-radius:0;overflow:visible}
+a.tmk-event-card--featured:hover{transform:none;box-shadow:none}
+a.tmk-event-card--featured .tmk-event-card__media img{
+	aspect-ratio:4/3;
+	border-radius:var(--radius-media);
+	box-shadow:var(--elevation-raised);
+	transition:box-shadow var(--motion-transition) var(--ease-out);
+}
+a.tmk-event-card--featured:hover .tmk-event-card__media img{box-shadow:var(--elevation-lift)}
+a.tmk-event-card--featured .tmk-event-card__body{padding:var(--space-5) 0 0}
+a.tmk-event-card--featured .tmk-event-card__kicker{font-size:var(--text-body-small);letter-spacing:var(--tracking-caps-wide)}
+a.tmk-event-card--featured .tmk-event-card__title{font-size:var(--text-h1);line-height:var(--leading-h1)}
+a.tmk-event-card--featured .tmk-event-card__venue{font-size:var(--text-lead)}
+a.tmk-event-card--featured .tmk-event-card__text{max-width:52ch}
+@media (min-width:1024px){
+	a.tmk-event-card--featured{
+		display:grid;
+		grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);
+		align-items:center;
+		gap:clamp(var(--space-7),4vw,var(--space-9));
+	}
+	a.tmk-event-card--featured .tmk-event-card__body{padding:0}
+}
+
+/* ── calendario: due colonne, come deciso da _BUILD/192 per la griglia scritta a mano ────── */
+.tmk-event-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--grid-gutter)}
+@media (min-width:768px){.tmk-event-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ── STATO VUOTO ─────────────────────────────────────────────────────────────────────────────
+   Non un riquadro vuoto e non una card demo: una vera apertura editoriale, con l'occhiello, il
+   titolo alla scala della pagina, una riga di testo e UNA azione. La CTA e' "Scopri i ristoranti"
+   e non "Prenota": su una pagina che non ha niente da prenotare una CTA di prenotazione e' una
+   promessa a vuoto (ed e' fuori perimetro, D-32). */
+.tmk-event-empty{max-width:56ch}
+.tmk-event-empty__eyebrow{
+	margin:0 0 var(--space-3);
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-action-primary-on-light);
+}
+.tmk-event-empty__title{
+	margin:0 0 var(--space-4);
+	font-family:var(--font-voice);
+	font-weight:var(--weight-voice);
+	font-size:var(--text-h1);
+	line-height:var(--leading-h1);
+	color:var(--color-text-primary);
+	text-wrap:balance;
+}
+.tmk-event-empty__copy{
+	margin:0 0 var(--space-6);
+	font-family:var(--font-structure);
+	font-size:var(--text-lead);
+	line-height:var(--leading-lead);
+	color:var(--color-text-secondary);
+	text-wrap:pretty;
+}
+.tmk-event-empty__actions{margin:0}
+
+/* ── DETTAGLIO: informazioni importanti ──────────────────────────────────────────────────── */
+/* Il container sparisce quando lo shortcode non ha reso niente, cosi' non resta il suo padding.
+   Sostituisce la regola equivalente scritta da _BUILD/195 contro i quattro vecchi campi: quella
+   puntava a selettori che non esistono piu' e teneva il container nascosto SEMPRE (vedi la nota
+   in _BUILD/200). Qui la condizione e' una sola e guarda cio' che c'e' davvero. */
+.tmk-event-info-wrap:not(:has(.tmk-event-info)){display:none}
+.tmk-event-info__label{
+	margin:0 0 var(--space-6);
+	font-family:var(--font-voice);
+	font-weight:var(--weight-voice);
+	font-size:var(--text-h2);
+	line-height:var(--leading-h2);
+	color:var(--color-text-primary);
+}
+.tmk-event-info__list{
+	margin:0 0 var(--space-6);
+	display:grid;
+	gap:var(--space-5);
+	grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));
+	padding:var(--space-6);
+	background:var(--color-surface-sunken);
+	border-top:3px solid var(--color-action-primary);
+	border-radius:var(--radius-soft);
+}
+.tmk-event-info__row{display:grid;gap:var(--space-1);align-content:start}
+.tmk-event-info__list dt{
+	margin:0;
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-action-primary-on-light);
+}
+.tmk-event-info__list dd{
+	margin:0;
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-body);
+	line-height:var(--leading-body);
+	color:var(--color-text-primary);
+}
+.tmk-event-info__list dd a{color:inherit;text-underline-offset:2px}
+.tmk-event-info__notes{
+	margin:0 0 var(--space-6);
+	font-family:var(--font-structure);
+	font-size:var(--text-body);
+	line-height:var(--leading-prose);
+	color:var(--color-text-secondary);
+	text-wrap:pretty;
+}
+@media (max-width:767px){.tmk-event-info__list{padding:var(--space-5)}}
+
+/* ── DETTAGLIO: galleria e partecipazione ────────────────────────────────────────────────── */
+.tmk-event-gallery{margin-block:var(--tmk-rhythm-structured)}
+.tmk-event-join{display:grid;gap:var(--space-4);justify-items:start}
+.tmk-event-join__title{
+	margin:0;
+	font-family:var(--font-voice);
+	font-weight:var(--weight-voice);
+	font-size:var(--text-h2);
+	line-height:var(--leading-h2);
+	color:var(--color-text-primary);
+}
+.tmk-event-join__actions{margin:0}
+.tmk-event-join__contact{
+	margin:0;
+	font-family:var(--font-structure);
+	font-size:var(--text-body-small);
+	line-height:var(--leading-body-small);
+	color:var(--color-text-secondary);
+}
+.tmk-event-join__contact span{font-weight:var(--weight-structure-bold);color:var(--color-text-primary)}
+
+/* ── DETTAGLIO: uscite ───────────────────────────────────────────────────────────────────── */
+.tmk-event-back{display:flex;flex-wrap:wrap;gap:var(--space-3) var(--space-5)}
+.tmk-event-back__link{
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-action-primary-on-light);
+	text-decoration:none;
+	min-height:44px;
+	display:inline-flex;
+	align-items:center;
+}
+.tmk-event-back__link:hover{color:var(--color-action-primary-hover)}

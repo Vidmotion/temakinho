@@ -1,0 +1,209 @@
+/* --container-body / --body-inset, non --container-page / --page-gutter (2026-09-04):
+   la colonna di contenuto delle pagine interne va sulla griglia della Home (1120 centrati,
+   160px di margine a 1440) - vedi css/tokens/layout.css. Header e footer restano su
+   --container-page, come sulla Home. */
+/* TMK Careers — composition-only layer for the Careers Hub + Job Detail (inc/careers-render.php).
+   The hub reuses the shared editorial .tmk-stack. The detail mirrors the Editorial Article grammar:
+   a narrow reading column for the role narrative + application form, widening to standard for trust
+   and related roles. Role narrative sections are post_content (h3 + lists), styled here. */
+
+.tmk-job{
+	display:grid;
+	gap:var(--tmk-rhythm-structured);
+	padding:var(--space-7) 0 var(--space-9);
+}
+.tmk-job__column{max-width:calc(var(--container-narrow) + 2 * var(--page-gutter));margin:0 auto;padding-inline:var(--page-gutter);width:100%}
+.tmk-job__wide{max-width:calc(var(--container-body) + 2 * var(--page-gutter));margin:0 auto;padding-inline:var(--page-gutter);width:100%}
+
+/* ROLE NARRATIVE — headed lists (Cosa farai / Chi cerchiamo / Cosa offriamo). */
+.tmk-job__body h2,.tmk-job__body h3{font-family:var(--font-voice);font-weight:var(--weight-voice);color:var(--color-text-primary);line-height:1.05;margin:var(--space-7) 0 var(--space-4)}
+.tmk-job__body h2{font-size:var(--text-h1)}
+.tmk-job__body h3{font-size:var(--text-h2)}
+.tmk-job__body > :first-child{margin-top:0}
+.tmk-job__body p{margin:0 0 var(--space-5);font-family:var(--font-structure);font-size:var(--text-lead);line-height:var(--leading-prose);color:var(--color-text-primary);text-wrap:pretty}
+.tmk-job__body ul,.tmk-job__body ol{margin:0 0 var(--space-5);padding-left:1.2em}
+.tmk-job__body li{font-family:var(--font-structure);font-size:var(--text-body);line-height:1.6;color:var(--color-text-primary);margin-bottom:var(--space-3)}
+
+/* APPLICATION heading. */
+.tmk-job__form-title{margin:0 0 var(--space-6);font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-h1);line-height:1;color:var(--color-text-primary)}
+
+/* ===========================================================================
+   OPEN ROLES — the live listing and its Head Quarter / Ristoranti filter
+   (client review, task 4). Composition only: the cards are the design system's
+   .tmk-card--overlay.tmk-card--city, untouched. */
+
+.tmk-jobs{display:grid;gap:var(--space-6)}
+
+/* The filter bar borrows the form's chip register rather than inventing a third button style —
+   same border, same radius, same caps label, same active fill as .tmk-form__chip. It is a real
+   <button> set, so focus, Enter/Space and aria-pressed all come for free. */
+.tmk-jobs__filter{display:flex;flex-wrap:wrap;gap:var(--space-3);justify-content:center}
+.tmk-jobs__filter-btn{
+	display:inline-flex;align-items:center;gap:var(--space-2);
+	min-height:44px;
+	padding:var(--space-2) var(--space-5);
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-text-secondary);
+	background:var(--color-surface-raised);
+	border:1.5px solid var(--color-border-default);
+	border-radius:var(--radius-pill);
+	cursor:pointer;
+	transition:background var(--motion-feedback,160ms) var(--ease-out),border-color var(--motion-feedback,160ms) var(--ease-out),color var(--motion-feedback,160ms) var(--ease-out);
+}
+.tmk-jobs__filter-btn:hover{border-color:var(--color-action-primary);color:var(--color-action-primary-on-light)}
+.tmk-jobs__filter-btn.is-active{background:var(--color-action-primary);border-color:var(--color-action-primary);color:var(--color-action-on-primary)}
+/* The count is data, not a label: it drops out of the caps register so the two read as two
+   levels inside one control instead of one long shouted string. */
+.tmk-jobs__filter-count{font-weight:var(--weight-structure);letter-spacing:0;opacity:.75;font-variant-numeric:tabular-nums}
+.tmk-jobs__none{margin:0;text-align:center;font-family:var(--font-structure);color:var(--color-text-secondary)}
+
+/* Application form — the reading column is 680px, and a two-field row inside it is the right
+   density; the block just needs its own air from the narrative above it. */
+.tmk-job-apply .tmk-form{margin-top:var(--space-5)}
+
+/* Requisiti block on the Job Detail (shortcode, conditional — see tmk_render_job_requirements).
+   Reuses the shared .tmk-section-title register so it reads as a level of the page, not as a
+   stray list after the body copy. */
+.tmk-job-requirements{margin-top:var(--tmk-rhythm-structured)}
+.tmk-job-requirements__list{margin:0;padding-left:1.2em;display:grid;gap:var(--space-3)}
+.tmk-job-requirements__list li{font-family:var(--font-structure);font-size:var(--text-body);line-height:var(--leading-body);color:var(--color-text-primary)}
+.tmk-job-requirements__text{margin:0;font-family:var(--font-structure);font-size:var(--text-body);line-height:var(--leading-body);color:var(--color-text-primary)}
+
+/* ═══════════════════════════════════════════════════════════════════════════════════════════
+   LAVORA CON NOI — rework visivo 2026-09-04.
+   La pagina era una sequenza di blocchi indipendenti: nessuno spartiva la stessa grammatica,
+   nessuno dominava. Qui non si aggiungono decorazioni: si dà una forma ai blocchi che c'erano.
+   Le classi sono quelle già presenti nel template Theme Builder #559 (tmk-lcn-*), quindi non
+   nasce nessun secondo sistema.
+   ═══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* CULTURA — fotografia + testo, non illustrazione + didascalia.
+   La fotografia prende il raggio delle superfici fotografiche del sistema (--radius-media, lo
+   stesso delle card) e un rapporto fisso: senza, la riga si allineava sull'altezza naturale del
+   file e il testo galleggiava. */
+.tmk-lcn-culture{align-items:center}
+.tmk-lcn-culture img{
+	display:block;
+	width:100%;
+	aspect-ratio:5/4;
+	object-fit:cover;
+	border-radius:var(--radius-media);
+	box-shadow:var(--elevation-raised);
+}
+/* Il titolo della sezione scende dal display alla scala h1: è il secondo livello della pagina,
+   non il primo — sopra c'è l'H1 dell'hero. */
+.tmk-lcn-culture__body{max-width:52ch}
+
+/* PILASTRI — tre card vere, non tre immagini con del testo sotto.
+   Prima le tre colonne si allineavano sull'altezza naturale delle rispettive fotografie: la
+   terza era più alta e mandava fuori registro titoli e testo (visibile a 1440). Un rapporto
+   fisso sulle immagini e l'allineamento in alto rimettono le tre voci sulla stessa linea di
+   base, che è la ragione per cui una griglia di card esiste. */
+.tmk-lcn-pillars > .e-con-inner{align-items:stretch}
+.tmk-lcn-pillars img{
+	display:block;
+	width:100%;
+	aspect-ratio:4/3;
+	object-fit:cover;
+	border-radius:var(--radius-media);
+}
+.tmk-lcn-pillar__eyebrow{margin-top:var(--space-4)}
+.tmk-lcn-pillar__title{margin-top:var(--space-1)}
+
+/* POSIZIONI APERTE — la griglia ora ha la larghezza giusta (vedi _BUILD/186); qui si dà solo
+   respiro fra l'etichetta di sezione e le card. */
+.tmk-lcn-roles .tmk-jobs{margin-top:var(--space-5)}
+
+/* LA VOCE DEL TEAM — la citazione resta centrata, e questa è una scelta: è un intermezzo, non
+   una sezione di contenuto. Ma prende una misura di lettura e un respiro suoi, invece di
+   galleggiare a piena larghezza. */
+.tmk-lcn-trust{text-align:center}
+
+/* CANDIDATURA SPONTANEA — la banda è diventata scura in _BUILD/185. Qui il testo prende la
+   misura di lettura e la CTA il respiro di una chiusura. */
+.tmk-lcn-conversion__body{max-width:58ch;margin-inline:auto}
+.tmk-lcn-conversion .elementor-button{margin-top:var(--space-4)}
+
+
+/* ── QA visiva 2026-09-04 ────────────────────────────────────────────────────────────────── */
+
+/* Stessa cosa della griglia eventi: 4 posizioni aperte in 3 colonne lasciavano una card sola su
+   una riga da tre. A 2 colonne la griglia e' piena e le card sono grandi abbastanza da leggersi
+   come una scelta. */
+/* Il numero di colonne NON si imposta qui: .tmk-jobs e' il wrapper, la griglia vera e' il
+   .tmk-card-grid che sta dentro e prende le colonne da --tmk-cols-desktop, stampato inline da
+   tmk_render_card_grid(). Una prima versione di questa regola puntava a .tmk-jobs e non faceva
+   assolutamente nulla - nessun errore, semplicemente nessun effetto. Il valore e' in
+   inc/careers-render.php (shortcode [tmk_jobs columns]). */
+
+/* "La voce del team" era un blocco centrato, piccolo, che galleggiava fra due griglie forti:
+   nessuna gerarchia, nessun punto focale. Diventa una citazione allineata all'asse della pagina,
+   alla scala della voce, con la firma staccata. Non e' testo nuovo: e' lo stesso contenuto. */
+.tmk-lcn-trust{text-align:start}
+.tmk-lcn-trust .tmk-lcn-trust__quote{max-width:24ch}
+.tmk-lcn-trust .tmk-lcn-trust__quote p{
+	font-family:var(--font-voice);
+	font-weight:var(--weight-voice);
+	font-size:clamp(1.6rem,0.9rem + 2vw,2.6rem);
+	line-height:1.08;
+	letter-spacing:var(--tracking-voice);
+	color:var(--color-text-primary);
+	text-wrap:balance;
+}
+.tmk-lcn-trust .tmk-lcn-trust__author p{
+	margin-top:var(--space-5);
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-text-secondary);
+}
+
+/* Banda di chiusura: il padding verticale e' governato da Elementor (0,3,0) ed e' gia' simmetrico
+   - misurato 86.4/86.4. Resta solo da riportare il paragrafo a una misura di lettura: prima
+   dell'apertura della corsia arrivava a 1364px su una riga sola. */
+.tmk-lcn-conversion .tmk-lcn-conversion__body{max-width:62ch;margin-inline:auto}
+
+
+/* ═════════════════════════════════════════════════════════════════════════════════════════════
+   2026-09-04 — IL RUOLO, IN TRE CAMPI INVECE CHE IN MARKUP SCRITTO A MANO
+   inc/careers-render.php::tmk_render_job_sections(). Un item per riga in tre textarea; ogni
+   sezione sparisce quando il suo campo e' vuoto. Stessa forma di .tmk-job-requirements, che
+   questo blocco affianca senza sostituirla.
+   ═════════════════════════════════════════════════════════════════════════════════════════════ */
+.tmk-job-section{margin:0 0 var(--tmk-rhythm-structured)}
+.tmk-job-section:last-of-type{margin-bottom:0}
+.tmk-job-section__list{
+	margin:0;
+	padding-left:1.25em;
+	display:grid;
+	gap:var(--space-3);
+	font-family:var(--font-structure);
+	font-size:var(--text-body);
+	line-height:var(--leading-prose);
+	color:var(--color-text-primary);
+}
+.tmk-job-section__text{
+	margin:0;
+	font-family:var(--font-structure);
+	font-size:var(--text-body);
+	line-height:var(--leading-prose);
+	color:var(--color-text-primary);
+	text-wrap:pretty;
+}
+.tmk-job-deadline{
+	margin:var(--space-6) 0 0;
+	padding:var(--space-4) var(--space-5);
+	background:var(--color-surface-sunken);
+	border-left:3px solid var(--color-action-primary);
+	border-radius:var(--radius-soft);
+	font-family:var(--font-structure);
+	font-size:var(--text-body-small);
+	line-height:var(--leading-body-small);
+	color:var(--color-text-primary);
+}

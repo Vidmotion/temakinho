@@ -1,0 +1,11 @@
+/* TMK Booking Widget - direct translation of components/conversion/BookingWidget.jsx (Tier 2/3 form).
+   Tier 1 renders a bare .tmk-cta and needs no rule of its own; only the inline reservation form
+   below is component-owned styling. Values mirror the source's inline styles verbatim, moved into
+   the components layer and expressed through the existing tokens (raised surface, soft radius,
+   raised elevation, bold-caps field labels), so nothing is reinterpreted. */
+.tmk-booking{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:end;background:var(--color-surface-raised);padding:var(--space-5);border-radius:var(--radius-soft);box-shadow:var(--elevation-raised);max-width:640px}
+.tmk-booking__field{display:grid;gap:4px}
+.tmk-booking__label{font-size:var(--text-caption);font-weight:var(--weight-structure-bold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-text-secondary)}
+.tmk-booking__input{padding:10px 12px;border-radius:var(--radius-soft);border:1.5px solid var(--color-border-default);background:var(--color-surface-raised);font:inherit;font-size:var(--text-body-small);color:var(--color-text-primary)}
+.tmk-booking__input--num{width:72px}
+.tmk-booking .tmk-cta{align-self:end}

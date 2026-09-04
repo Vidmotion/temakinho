@@ -1,0 +1,123 @@
+/* TMK forms — shared field styling for the first-party lead forms (Contact IntentForm, Job
+   Application). Calm, on the raised surface; submit uses the governed .tmk-cta button. Mirrors the
+   Newsletter capture's register so every form on the site reads as one family. */
+
+.tmk-form{display:grid;gap:var(--space-5)}
+.tmk-form__field{display:grid;gap:var(--space-2)}
+.tmk-form__label{font-family:var(--font-structure);font-weight:var(--weight-structure-medium);font-size:var(--text-body-small);color:var(--color-text-primary)}
+.tmk-form__label .tmk-form__req{color:var(--color-action-primary-on-light)}
+.tmk-form__input,
+.tmk-form__textarea,
+.tmk-form__select{
+	font-family:var(--font-structure);font-size:var(--text-body);color:var(--color-text-primary);
+	background:var(--color-surface-raised);
+	border:1.5px solid var(--color-border-default);
+	border-radius:var(--radius-soft);
+	padding:var(--space-3) var(--space-4);
+	width:100%;
+	transition:border-color var(--motion-feedback,160ms) var(--ease-out);
+}
+.tmk-form__textarea{min-height:8em;resize:vertical;line-height:1.55}
+.tmk-form__input:focus-visible,
+.tmk-form__textarea:focus-visible,
+.tmk-form__select:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-ring-offset);border-color:var(--color-action-primary)}
+
+/* Intent chooser (Contact) — a segmented set of radio "chips". */
+.tmk-form__intents{display:flex;flex-wrap:wrap;gap:var(--space-3);border:0;margin:0;padding:0}
+.tmk-form__intents legend{font-family:var(--font-structure);font-weight:var(--weight-structure-medium);font-size:var(--text-body-small);margin-bottom:var(--space-3)}
+.tmk-form__chip{position:relative}
+.tmk-form__chip input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.tmk-form__chip span{
+	display:inline-block;padding:var(--space-2) var(--space-4);
+	font-family:var(--font-structure);font-weight:var(--weight-structure-medium);font-size:var(--text-body-small);
+	border:1.5px solid var(--color-border-default);border-radius:var(--radius-pill);
+	color:var(--color-text-secondary);background:var(--color-surface-raised);
+	transition:all var(--motion-feedback,160ms) var(--ease-out);
+}
+.tmk-form__chip input:checked + span{border-color:var(--color-action-primary);color:var(--color-action-on-primary);background:var(--color-action-primary)}
+.tmk-form__chip input:focus-visible + span{outline:var(--focus-ring);outline-offset:var(--focus-ring-offset)}
+
+.tmk-form__submit{justify-self:start}
+.tmk-form__note{font-family:var(--font-structure);font-size:var(--text-body-small);line-height:1.55;color:var(--color-text-secondary)}
+.tmk-form__msg{margin:0;padding:var(--space-4) var(--space-5);border-radius:var(--radius-soft);font-family:var(--font-structure);font-size:var(--text-body)}
+.tmk-form__msg--success{background:color-mix(in srgb, var(--color-feedback-success) 12%, transparent);color:var(--color-feedback-success)}
+.tmk-form__msg--error{background:color-mix(in srgb, var(--color-feedback-error) 12%, transparent);color:var(--color-feedback-error)}
+
+/* ===========================================================================
+   APPLICATION FORM (client review, task 4). Same family as every other form on the site — the
+   field, label, input and message rules above are reused verbatim; these are the three shapes
+   the job application needed and no form here had yet. */
+
+/* Paired fields (Nome/Cognome, Email/Telefono). Wraps to one column on its own via the basis,
+   with no media query: the kit's breakpoints have been rewritten twice in this project and a
+   two-field row is exactly the case that does not need to know about them. */
+.tmk-form__row{display:flex;flex-wrap:wrap;gap:var(--space-5)}
+.tmk-form__row > .tmk-form__field{flex:1 1 220px;min-width:0}
+
+/* File input. Styled through ::file-selector-button rather than by hiding the input behind a
+   label: a real <input type="file"> keeps its native keyboard behaviour, its "no file selected"
+   status text and its constraint validation, all of which a custom control has to re-implement
+   and usually re-implements worse. The button borrows the secondary CTA's register. */
+.tmk-form__file{
+	font-family:var(--font-structure);
+	font-size:var(--text-body-small);
+	color:var(--color-text-secondary);
+	background:var(--color-surface-raised);
+	border:1.5px dashed var(--color-border-default);
+	border-radius:var(--radius-soft);
+	padding:var(--space-4);
+	width:100%;
+	cursor:pointer;
+	transition:border-color var(--motion-feedback,160ms) var(--ease-out);
+}
+.tmk-form__file:hover{border-color:var(--color-action-primary)}
+.tmk-form__file:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-ring-offset);border-color:var(--color-action-primary)}
+.tmk-form__file::file-selector-button{
+	font-family:var(--font-structure);
+	font-weight:var(--weight-structure-bold);
+	font-size:var(--text-caption);
+	letter-spacing:var(--tracking-caps);
+	text-transform:uppercase;
+	color:var(--color-action-primary-on-light);
+	background:transparent;
+	border:1.5px solid var(--color-action-primary);
+	border-radius:var(--radius-soft);
+	padding:var(--space-2) var(--space-4);
+	margin-right:var(--space-4);
+	cursor:pointer;
+	transition:background var(--motion-feedback,160ms) var(--ease-out),color var(--motion-feedback,160ms) var(--ease-out);
+}
+.tmk-form__file:hover::file-selector-button{background:var(--color-action-primary);color:var(--color-action-on-primary)}
+
+.tmk-form__hint{margin:0;font-family:var(--font-structure);font-size:var(--text-caption);line-height:var(--leading-meta);color:var(--color-text-secondary)}
+.tmk-form__textarea--short{min-height:4.5em}
+
+/* Honeypot. Hidden from sight AND from assistive technology, but still a real, focusable-by-bots
+   field — so `display:none` would defeat it in some crawlers and `visibility:hidden` would leave
+   a gap. Taken out of flow with the same clip technique .tmk-sr-only uses, plus aria-hidden and
+   tabindex=-1 in the markup so no human ever reaches it. */
+.tmk-form__trap{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+
+/* ═════════════════════════════════════════════════════════════════════════════════════════════
+   2026-09-04 — CONSENSO PRIVACY (form candidatura)
+   La casella e il testo stanno su una riga sola, allineati in alto, perche' il testo va a capo
+   e il quadratino deve restare accanto alla PRIMA riga. Bersaglio: l'intera etichetta e'
+   cliccabile e alta almeno 44px, cioe' la soglia dichiarata dal progetto.
+   ═════════════════════════════════════════════════════════════════════════════════════════════ */
+.tmk-form__field--consent{gap:0}
+.tmk-form__consent{
+	display:grid;
+	grid-template-columns:auto 1fr;
+	gap:var(--space-3);
+	align-items:start;
+	min-height:44px;
+	padding-block:var(--space-2);
+	cursor:pointer;
+	font-family:var(--font-structure);
+	font-size:var(--text-body-small);
+	line-height:var(--leading-body-small);
+	color:var(--color-text-primary);
+}
+.tmk-form__consent input[type="checkbox"]{width:20px;height:20px;margin:0;flex:0 0 auto;accent-color:var(--color-action-primary)}
+.tmk-form__consent a{color:var(--color-action-primary-on-light);text-underline-offset:2px}

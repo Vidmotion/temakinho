@@ -1,0 +1,24 @@
+/* --container-body / --body-inset, non --container-page / --page-gutter (2026-09-04):
+   la colonna di contenuto delle pagine interne va sulla griglia della Home (1120 centrati,
+   160px di margine a 1440) - vedi css/tokens/layout.css. Header e footer restano su
+   --container-page, come sulla Home. */
+/* TMK system pages — composition-only layers for 404 (inc/notfound-render.php) and Search
+   (inc/search-render.php). 404 is a centred editorial moment; Search is a header + refine field +
+   results grid (the grid itself is the shared CardGrid). */
+
+/* 404 — big Londrina code on the tatami stage, two ways back. */
+.tmk-404{max-width:calc(var(--container-narrow) + 2 * var(--page-gutter));margin:0 auto;padding-block:var(--space-9);padding-inline:var(--page-gutter);text-align:center;display:grid;justify-items:center;gap:var(--space-4)}
+.tmk-404__code{margin:0;font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:clamp(96px,22vw,200px);line-height:0.8;color:var(--tatami-600)}
+.tmk-404__eyebrow{margin:0;font-family:var(--font-voice);font-weight:var(--weight-structure-bold);font-size:var(--text-caption);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--tatami-600)}
+.tmk-404__title{margin:0;font-family:var(--font-voice);font-weight:var(--weight-voice-soft);font-size:var(--text-display);line-height:0.95;color:var(--tatami-600);text-transform:uppercase;text-wrap:balance}
+.tmk-404__copy{margin:0;max-width:520px;font-family:var(--font-structure);font-size:var(--text-lead);line-height:var(--leading-lead);color:var(--color-text-secondary);text-wrap:pretty}
+.tmk-404__actions{display:flex;flex-wrap:wrap;gap:var(--space-3);justify-content:center;margin-top:var(--space-4)}
+
+/* Search — header + refine field, then a results CardGrid. */
+.tmk-search{max-width:calc(var(--container-body) + 2 * var(--page-gutter));margin:0 auto;padding-block:var(--space-8) var(--space-9);padding-inline:var(--page-gutter)}
+.tmk-search__header{margin:var(--space-6) 0 var(--space-7)}
+.tmk-search__eyebrow{margin:0 0 var(--space-3);font-family:var(--font-structure);font-weight:var(--weight-structure-bold);font-size:var(--text-caption);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--color-action-primary-on-light)}
+.tmk-search__title{margin:0 0 var(--space-6);font-family:var(--font-voice);font-weight:var(--weight-voice);font-size:var(--text-display);line-height:0.95;color:var(--color-text-primary)}
+.tmk-search__form{display:flex;gap:var(--space-3);flex-wrap:wrap;align-items:stretch;max-width:var(--container-narrow)}
+.tmk-search__form .tmk-form__input{flex:1 1 240px}
+.tmk-search__form .tmk-cta{white-space:nowrap}

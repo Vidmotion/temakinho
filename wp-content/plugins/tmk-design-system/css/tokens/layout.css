@@ -1,0 +1,118 @@
+/* TMK layout — 12-column grid, gutter = inline step; container roles (10_SPEC Ch.11-13).
+   Breakpoints (mobile-first): mobile 0-599, tablet 600-1023, desktop 1024-1439, wide 1440+. */
+:root{
+  --grid-columns:12;
+  --grid-gutter:var(--space-5);
+  --container-narrow:680px;
+  --container-standard:1040px;
+  --container-wide:1280px;
+  --bp-tablet:600px;--bp-desktop:1024px;--bp-wide:1440px;
+  /* Photography crop-ratio roles (10_SPEC Ch.18) */
+  --ratio-hero:16/9;
+  --ratio-hero-mobile:4/5;
+  --ratio-card:4/3;
+  --ratio-gallery:1/1;
+}
+
+/* Shared two-tier vertical rhythm — verbatim from Claude Design's shell/refinements.css :root.
+   The canonical Homepage stack (pages/Homepage.jsx) references both: the content wrapper's
+   bottom padding is --tmk-rhythm-airy and its row gap is --tmk-rhythm-structured.
+   airy = editorial / hub breathing · structured = catalog / detail / navigation.
+   These live in the tokens layer rather than in a new terminal "refinements" stylesheet on
+   purpose: they are pure custom properties, which is exactly what css/tokens/ is for, so the
+   locked layer chain in inc/enqueue.php stays untouched (PROJECT_CONTEXT Rule 9). The REST of
+   refinements.css (header treatment, hero scrim, motion, .tmk-collapse) is NOT ported here —
+   it needs the layer decision recorded as conflict C2. */
+:root{
+  --tmk-rhythm-airy:clamp(72px,7vw,112px);
+  --tmk-rhythm-structured:clamp(52px,5vw,72px);
+}
+
+/* ===========================================================================
+   PAGE GRID — the single horizontal grid every top-level region shares.
+   Added 2026-09-03 (client review "chiusura progetto", task 1).
+
+   THE PROBLEM IT SOLVES, measured, not assumed. Four different horizontal
+   grids were live at once:
+     - Elementor BOXED rows (footer #27, tmkloc_col on the Location template):
+       max-width = the kit's own container_width (1440) + 32px padding;
+     - Elementor FULL rows (#tmk-header, every hero container): edge-to-edge
+       with 32px of padding, i.e. NO cap at all;
+     - plugin page wrappers: --container-standard (1040) or --container-wide
+       (1280), centred;
+     - reading columns: --container-narrow (680), centred.
+   Up to a 1440px viewport the first two coincide (both resolve to a 32px
+   inset), which is why this went unnoticed for eleven sessions. Past ~1504px
+   they diverge without limit: at 1900px the Location hero's headline sits at
+   x=32 while the breadcrumb directly beneath it sits at x=230. That 198px
+   step is the defect the client reported ("l'hero e' troppo vicino ai bordi
+   rispetto al resto della pagina").
+
+   THE GRID IS THE FOOTER'S, by client decision: the footer is the region that
+   already reads correctly, so its geometry becomes the site's. Nothing here is
+   an invented number - --container-page mirrors the Elementor kit's own
+   container_width (1440, set by _BUILD/130) and --page-gutter is --space-6
+   (32px), the value _BUILD/152 already rolled out site-wide.
+
+   --page-inset is the whole mechanism in one expression. Applied as
+   padding-inline to a FULL-WIDTH element it reproduces Elementor's boxed
+   geometry exactly, because for a centred boxed row
+       gutter = max(padding, (viewport - container_width) / 2)
+   and max() is precisely that formula. Verified algebraically against both
+   regimes: at 1440 both give 32; at 1900 both give 230. It is used instead of
+   a max-width + margin:auto pair wherever the element's BACKGROUND must stay
+   edge-to-edge (header bar, full-bleed hero) - only the content moves.
+
+   Two roles, and only two, for every top-level region on the site:
+     SECTION  - .tmk-page        (grids, bands, media, hero content)  -> 1440
+     READING  - .tmk-page--reading (prose measure)                    ->  680
+   --container-standard (1040) and --container-wide (1280) stay defined because
+   components still reference them, but no PAGE section uses them any more:
+   three page widths were two too many, and the middle one was the one that
+   made the footer look misaligned with everything above it. */
+:root{
+  --container-page:1440px;
+  --page-gutter:var(--space-6);
+  --page-inset:max(var(--page-gutter),calc((100% - var(--container-page)) / 2));
+
+  /* --- LA CORSIA DELLE ILLUSTRAZIONI (2026-09-04) -----------------------------------------
+     --container-page (1440) resta la griglia della CROMATURA: header e footer. E' la stessa
+     scelta che fa la Home, misurata: li' il logo di testata sta a x=32 e le colonne del footer
+     partono da x=32, mentre la colonna di CONTENUTO e' larga 1120 e centrata, cioe' lascia
+     160px di margine per lato a 1440 e 400px a 1920.
+
+     Quei 160px non sono decorativi in senso lato: sono lo spazio in cui vivono le illustrazioni.
+     Le pagine interne avevano invece una colonna da 1440 con 32px di gutter - margine zero - e
+     questo, non la dimensione dell'arte, era la vera causa del difetto "decorazioni piccole /
+     tagliate / addosso al testo". Verificato provandolo: con 32px di margine NON ESISTE una
+     collocazione valida per un'illustrazione, perche' qualunque pezzo ancorato al bordo del
+     viewport arriva sotto la prima riga di testo della sezione. Ingrandire l'arte senza aprire
+     il margine ha solo spostato il difetto (i motivi finivano sopra i titoli di sezione).
+
+     --container-body e' quindi il valore della Home, 1120, applicato al contenuto delle pagine
+     interne: stessa proporzione, stessa aria, stessa logica decorativa. Header e footer NON si
+     toccano e restano a 32px, esattamente come sulla Home. */
+  --container-body:1120px;
+  --body-inset:max(var(--page-gutter),calc((100% - var(--container-body)) / 2));
+}
+
+
+/* ===========================================================================
+   SCALA VERTICALE HERO -> CONTENUTO (rework 2026-09-04).
+
+   Misurato nel browser a 1440 il divario fra il bordo inferiore dell'hero e il primo elemento
+   di testo sotto: 40 (Storia) · 48 (Ristorante) · 64 (Chi siamo) · 64 (Storie) · 67 (Eventi) ·
+   67 (Shop) · 115 (Home). Sette pagine, sei valori diversi, nessuna ragione progettuale: e'
+   esattamente il difetto segnalato dal cliente.
+
+   Due soli attacchi, perche' i casi sono due:
+     --hero-to-breadcrumb  il primo elemento e' una briciola di pane. Deve stare VICINO all'hero:
+                           dice "sei qui", appartiene all'intestazione, non al contenuto.
+     --hero-to-section     il primo elemento e' un titolo di sezione. Prende il respiro pieno del
+                           ritmo strutturato, lo stesso che separa due sezioni fra loro, cosi' la
+                           prima sezione non e' un caso speciale.
+   La Home non e' toccata: ha una composizione propria, verificata, ed e' il riferimento. */
+:root{
+  --hero-to-breadcrumb:var(--space-7);              /* 48px */
+  --hero-to-section:var(--tmk-rhythm-structured);   /* clamp(52,5vw,72) */
+}
