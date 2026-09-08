@@ -283,6 +283,26 @@ function tmk_register_meta_fields() {
 	 */
 	register_post_meta( 'location', 'tmk_location_booking_page_id', array( 'show_in_rest' => true, 'single' => true, 'type' => 'integer' ) );
 
+	/*
+	 * CHIUSURA DI UNA SEDE — l'ULTIMO GIORNO DI SERVIZIO, in formato 'Y-m-d'.
+	 *
+	 * Richiesta cliente 2026-09-07: "da lunedi' 14 togliere Capo d'Orlando", "domenica 13 ultimo
+	 * giorno di servizio". Il sito non aveva NESSUNA logica di stato o di data sulle sedi: l'unico
+	 * modo di togliere un ristorante era spostarlo in bozza o cancellarlo, cioe' perdere la scheda
+	 * e i suoi permalink. Questo campo e' quella logica mancante, e non e' un caso speciale per
+	 * Capo d'Orlando: vale per qualunque sede, adesso e in futuro.
+	 *
+	 * Semantica, volutamente "ultimo giorno" e non "primo giorno di chiusura": e' come il cliente
+	 * ragiona e come lo ha scritto. La sede resta pubblicata FINO A TUTTO quel giorno compreso e
+	 * sparisce dagli elenchi il giorno dopo (vedi tmk_location_is_active()).
+	 *
+	 * NON e' distruttivo: il record, le foto, gli orari e la pagina della sede restano dove sono.
+	 * Cambia solo la PRESENZA NEGLI ELENCHI pubblici, e svuotare il campo la ripristina — salvo per
+	 * le chiusure gia' concordate che arrivano da tmk_location_closing_dates(), dove serve togliere
+	 * la riga dalla mappa; il riquadro "Stato attuale" nella scheda della sede lo dice a schermo.
+	 */
+	register_post_meta( 'location', 'tmk_location_closing_date', $text );
+
 	// Menu Item — IA §27
 	register_post_meta( 'menu_item', 'price', $text );
 	register_post_meta( 'menu_item', 'short_description', $text );
@@ -487,4 +507,154 @@ function tmk_register_application_meta() {
 	}
 	register_post_meta( 'job_application', 'tmk_application_job_id', array( 'show_in_rest' => false, 'single' => true, 'type' => 'integer' ) );
 	register_post_meta( 'job_application', 'tmk_application_cv_id', array( 'show_in_rest' => false, 'single' => true, 'type' => 'integer' ) );
+}
+
+/* ================================================================================================
+   SEDI ATTIVE — la sola logica temporale del sito, e dove viene applicata.
+
+   Richiesta cliente del 2026-09-07: Capo d'Orlando deve sparire dal sito da lunedi' 14, con
+   domenica 13 come ultimo giorno di servizio. Il progetto non aveva alcuna gestione di stato o di
+   data sulle sedi, quindi questa e' la logica mancante, scritta una volta sola e riusata da ogni
+   elenco pubblico invece di essere ripetuta in ogni renderer.
+
+   PERCHE' NON "sposta la scheda in bozza".
+   Metterla in bozza fa 404 il permalink della sede, la toglie dalla sitemap e perde la scheda: e'
+   irreversibile a costo zero solo in apparenza. Qui la scheda resta pubblicata e raggiungibile —
+   sparisce dagli ELENCHI, che e' quello che il cliente ha chiesto ("rimuovere dalla pagina").
+   Ritirare del tutto anche la pagina di dettaglio resta una scelta editoriale da fare in wp-admin.
+
+   DOVE VIENE APPLICATA (tutto cio' che questo plugin genera davvero):
+     - /ristoranti/ (indice delle citta')                inc/city-render.php
+     - /ristoranti/{citta}/ (collezione della citta')    inc/city-render.php
+     - "Altri ristoranti Temakinho" sulla scheda sede    inc/location-render.php + widget Elementor
+     - bande citta' della Home (renderer dinamico)       inc/card-render.php
+   NON puo' agire su cio' che vive nel database come contenuto Elementor o come voce di menu: la
+   Home attuale (#36), il menu di testata e il <select> della pagina /prenota/ (#13752) sono
+   scritti a mano li' dentro e vanno aggiornati in wp-admin. Vedi il report della sessione.
+   ============================================================================================== */
+
+/**
+ * Chiusure gia' decise editorialmente, come slug della sede => ultimo giorno di servizio 'Y-m-d'.
+ *
+ * Perche' esiste, invece di stare solo nel database: il repository e' l'ambiente di sviluppo e non
+ * ha accesso al database di produzione, quindi una decisione presa dal cliente non avrebbe altro
+ * modo di arrivare al sito. Il campo in wp-admin (Ristorante -> Stato) VINCE su questa mappa
+ * appena contiene una data: e' cosi' che si sposta o si anticipa una chiusura senza toccare il
+ * codice. Svuotarlo invece NON annulla una chiusura scritta qui — vedi la nota su
+ * tmk_location_closing_date() per il perche'.
+ *
+ * Filtrabile, cosi' un ambiente puo' cambiarla senza toccare il plugin.
+ *
+ * @return array<string,string>
+ */
+function tmk_location_closing_dates() {
+	return (array) apply_filters( 'tmk_location_closing_dates', array(
+		// Richiesta cliente 2026-09-07: ultimo giorno di servizio domenica 13 settembre 2026,
+		// quindi dal 14 la sede non compare piu' negli elenchi.
+		'temakinho-capo-dorlando' => '2026-09-13',
+	) );
+}
+
+/**
+ * L'ultimo giorno di servizio di una sede, 'Y-m-d', oppure '' se non ne ha uno.
+ *
+ * Ordine: prima il campo compilato in wp-admin, poi la mappa qui sopra.
+ *
+ * Il confronto e' sul VALORE, non sull'esistenza della riga di meta, ed e' voluto: il pannello
+ * scrive quella riga (anche vuota) ogni volta che si salva una sede, quindi con un controllo di
+ * esistenza sarebbe bastato aprire e salvare Capo d'Orlando senza toccare nulla per riportarla
+ * silenziosamente online. Cosi' invece la data resta stabile e il pannello serve a cambiarla, non
+ * a perderla per sbaglio.
+ *
+ * Conseguenza da conoscere: ANNULLARE una chiusura decisa nella mappa non si fa svuotando il
+ * campo — si fa togliendo la riga da tmk_location_closing_dates() o agganciando il filtro omonimo.
+ * Il riquadro "Stato attuale" nella scheda della sede lo dice esplicitamente.
+ *
+ * @param int $location_id
+ * @return string
+ */
+function tmk_location_closing_date( $location_id ) {
+	$location_id = (int) $location_id;
+	if ( ! $location_id ) {
+		return '';
+	}
+	$stored = trim( (string) get_post_meta( $location_id, 'tmk_location_closing_date', true ) );
+	if ( '' !== $stored ) {
+		return $stored;
+	}
+	$map  = tmk_location_closing_dates();
+	$slug = get_post_field( 'post_name', $location_id );
+	return isset( $map[ $slug ] ) ? (string) $map[ $slug ] : '';
+}
+
+/**
+ * La sede e' ancora da mostrare negli elenchi pubblici?
+ *
+ * Confronto fra date pure nel fuso del sito (wp_timezone), non fra timestamp: "ultimo giorno di
+ * servizio 2026-09-13" deve restare vero per tutto il 13, a qualsiasi ora, e diventare falso a
+ * mezzanotte del 14. Un confronto di stringhe 'Y-m-d' fa esattamente questo senza aritmetica di
+ * orari.
+ *
+ * NOTA sul fuso: il sito e' ancora configurato su UTC (segnalato come punto aperto nel report di
+ * chiusura). Finche' resta cosi', lo scatto avviene alle 02:00 ora italiana del 14 invece che a
+ * mezzanotte. Impostare Europe/Rome in Impostazioni -> Generali risolve anche questo.
+ *
+ * @param int|WP_Post $location
+ * @return bool
+ */
+function tmk_location_is_active( $location ) {
+	$id = $location instanceof WP_Post ? (int) $location->ID : (int) $location;
+	if ( ! $id ) {
+		return false;
+	}
+	$closing = tmk_location_closing_date( $id );
+	if ( '' === $closing ) {
+		return true;
+	}
+	$today = wp_date( 'Y-m-d' );
+	return $today <= $closing;
+}
+
+/**
+ * Le sedi ancora attive di una citta', in ordine di titolo. Una sola query per termine per
+ * richiesta: gli elenchi la chiedono piu' volte (conteggio nell'occhiello, griglia, foto di
+ * ripiego) e non ha senso ripeterla.
+ *
+ * @param WP_Term|int $term
+ * @return WP_Post[]
+ */
+function tmk_city_active_locations( $term ) {
+	static $cache = array();
+
+	$term_id = $term instanceof WP_Term ? (int) $term->term_id : (int) $term;
+	if ( ! $term_id ) {
+		return array();
+	}
+	if ( isset( $cache[ $term_id ] ) ) {
+		return $cache[ $term_id ];
+	}
+
+	$posts = get_posts( array(
+		'post_type'      => 'location',
+		'post_status'    => 'publish',
+		'posts_per_page' => -1,
+		'orderby'        => 'title',
+		'order'          => 'ASC',
+		'tax_query'      => array( array( 'taxonomy' => 'city', 'field' => 'term_id', 'terms' => $term_id ) ),
+	) );
+
+	$cache[ $term_id ] = array_values( array_filter( $posts, 'tmk_location_is_active' ) );
+	return $cache[ $term_id ];
+}
+
+/**
+ * Quante sedi attive ha una citta'. Sostituisce $term->count negli elenchi: il conteggio di
+ * WordPress conta i post assegnati al termine e non sa nulla delle chiusure, quindi da solo
+ * scriverebbe "1 ristorante" sotto una citta' che non ne ha piu' nessuno aperto.
+ *
+ * @param WP_Term|int $term
+ * @return int
+ */
+function tmk_city_active_count( $term ) {
+	return count( tmk_city_active_locations( $term ) );
 }

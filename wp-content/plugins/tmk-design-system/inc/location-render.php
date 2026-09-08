@@ -139,7 +139,9 @@ function tmk_render_location( $post = null ) {
 	}
 
 	$narrative_body = $short ? $short : ( $post->post_content ? wp_strip_all_tags( $post->post_content ) : '' );
-	$booking_href   = $booking ? $booking : home_url( '/#prenota' );
+	// tmk_location_booking_href() restituisce sempre una destinazione reale; il ripiego resta solo
+	// per sicurezza ed e' allineato a quello di tutto il resto del sito (2026-09-07).
+	$booking_href   = $booking ? $booking : ( defined( 'TMK_BOOKING_URL' ) ? TMK_BOOKING_URL : home_url( '/#prenota' ) );
 	$menu_url       = home_url( '/menu/' );
 	$concept_attr   = $concept ? ' data-concept="' . esc_attr( $concept ) . '"' : '';
 

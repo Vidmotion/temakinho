@@ -16,7 +16,8 @@ function tmk_render_hero( $atts = array() ) {
 		'concept'         => '',
 		'concept_label'   => '',
 		'cta_label'       => 'Prenota ora',
-		'cta_href'        => home_url( '/#prenota' ),
+		// 2026-09-07: ripiego sulla destinazione governata invece dell'ancora /#prenota.
+		'cta_href'        => defined( 'TMK_BOOKING_URL' ) ? TMK_BOOKING_URL : home_url( '/#prenota' ),
 		'secondary_label' => '',
 		'secondary_href'  => '#',
 		'height'          => '',

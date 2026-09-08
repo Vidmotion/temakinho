@@ -10,10 +10,22 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 define( 'TMK_DS_VERSION', '1.19.0' );
-// Production booking + ordering destinations (temakinho.com footer / contact page). Used as the
-// governed fallback for every Prenota action that has no per-instance booking_url yet, so CTAs point
-// at the real system instead of the /#prenota placeholder.
-if ( ! defined( 'TMK_BOOKING_URL' ) ) define( 'TMK_BOOKING_URL', 'https://temakinho.it/prenota/' );
+// Production booking + ordering destinations. Used as the governed fallback for every Prenota
+// action that has no per-instance destination yet, so CTAs point at the real system instead of the
+// /#prenota placeholder.
+//
+// 2026-09-07 - TMK_BOOKING_URL ripuntato da https://temakinho.it/prenota/ a
+// https://temakinho.com/prenota/ su richiesta del cliente: il dominio canonico e' .com e la
+// pagina /prenota/ (page #13752) e' li'. Prima di questa modifica ogni pagina ristorante
+// pubblicava DUE link a temakinho.it (CTA dell'hero + fascia "Il tuo tavolo ti aspetta") mentre il
+// pulsante PRENOTA ORA della testata puntava a .com: e' esattamente l'incoerenza segnalata.
+// Verificato prima di cambiare: https://temakinho.com/prenota/ risponde 200.
+// D-32 resta rispettato - qui cambia una DESTINAZIONE, non il sistema di prenotazione: nessuna
+// rotta, nessun provider, nessun contenuto delle pagine /prenota-*\/ e' toccato.
+if ( ! defined( 'TMK_BOOKING_URL' ) ) define( 'TMK_BOOKING_URL', 'https://temakinho.com/prenota/' );
+// ATTENZIONE - NON allineare questa al .com senza prima creare la pagina: verificato il
+// 2026-09-07, https://temakinho.com/ordina-online/ risponde 404, mentre
+// https://temakinho.it/ordina-online/ risponde 200. Ripuntarla romperebbe il link "Delivery".
 if ( ! defined( 'TMK_ORDER_URL' ) )   define( 'TMK_ORDER_URL', 'https://temakinho.it/ordina-online/' );
 // Real external shop (temakinho.com Shopify storefront). The Shop page is an on-brand showcase; the
 // actual purchase happens on the real store, so product actions route here rather than faking a cart.

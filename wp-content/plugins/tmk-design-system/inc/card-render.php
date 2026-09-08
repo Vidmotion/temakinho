@@ -129,16 +129,57 @@ add_shortcode( 'tmk_card', function ( $atts ) {
 	return tmk_render_card( $atts );
 } );
 
+/* ================================================================================================
+   CARD CITTA' — Card's "city" variant bound to the real `city` taxonomy + `location` CPT count,
+   for the Homepage's city section and for /ristoranti/. Real WP data in place of Claude Design's
+   ui_kits demo array.
+
+   2026-09-07, DUE correzioni, entrambe segnalate dal cliente sul sito in produzione.
+
+   1. IL CONTEGGIO. Era $term->count, cioe' il conteggio di WordPress: conta le sedi assegnate al
+      termine e non sa nulla delle chiusure. Ora conta le sedi ATTIVE (tmk_city_active_count), cosi'
+      una citta' non puo' annunciare un ristorante che non c'e' piu'.
+
+   2. LA FOTO DI COPERTINA. La foto della card e' la meta `hero_image_id` del termine citta'.
+      Verificato in produzione: Milano 29, Roma 31, Bologna 30, Lione 32, Rimini 33 — ma Reggio
+      Calabria e Capo d'Orlando hanno hero_image_id = 0, quindi su /ristoranti/ le loro card
+      uscivano SENZA immagine. Era esattamente la segnalazione "manca la foto di copertina di
+      Reggio Calabria": non un problema di template, ma un'associazione mai fatta.
+
+      Qui non si inventa nulla e non si sceglie una foto al posto del cliente: se il termine non ha
+      una propria immagine, si usa l'immagine in evidenza della sua prima sede attiva — cioe' LA
+      STESSA foto che la scheda di quel ristorante gia' pubblica come apertura. E' la logica di
+      copertina che il sito usa gia' altrove, applicata al caso in cui il dato piu' specifico
+      manchi. Appena qualcuno imposta una vera foto di citta', quella torna a vincere.
+   ============================================================================================== */
+
 /**
- * Binds Card's "city" variant to the real `city` taxonomy + `location` CPT count, for the
- * Homepage's city section — real WP data in place of Claude Design's ui_kits demo array.
+ * La foto di copertina di una citta': la sua `hero_image_id`, altrimenti l'immagine in evidenza
+ * della prima sede ancora attiva. Zero solo se non c'e' davvero nessuna fotografia da usare — e in
+ * quel caso Card omette del tutto il livello immagine, come ha sempre fatto.
+ *
+ * @param WP_Term $term
+ * @return int
+ */
+function tmk_city_cover_media_id( $term ) {
+	$media_id = (int) get_term_meta( $term->term_id, 'hero_image_id', true );
+	if ( $media_id ) {
+		return $media_id;
+	}
+	$active = tmk_city_active_locations( $term );
+	return $active ? (int) get_post_thumbnail_id( $active[0]->ID ) : 0;
+}
+
+/**
+ * @param WP_Term $term
+ * @return string
  */
 function tmk_render_city_card( $term, $loading = 'lazy', $class = '', $sizes = '' ) {
-	$location_count = (int) $term->count;
+	$location_count = tmk_city_active_count( $term );
 
 	return tmk_render_card( array(
 		'variant'  => 'city',
-		'media_id' => (int) get_term_meta( $term->term_id, 'hero_image_id', true ),
+		'media_id' => tmk_city_cover_media_id( $term ),
 		'title'    => $term->name,
 		'eyebrow'  => $location_count . ' ' . ( 1 === $location_count ? 'ristorante' : 'ristoranti' ),
 		'href'     => tmk_city_href( $term ),
@@ -272,13 +313,24 @@ function tmk_canonical_city_slugs() {
 }
 
 /**
- * Every city term that actually has a restaurant, in canonical order.
+ * Every city term that actually has a restaurant APERTO, in canonical order.
+ *
+ * `hide_empty` toglie le citta' senza sedi assegnate; il filtro aggiunto qui toglie anche quelle
+ * le cui sedi hanno superato il proprio ultimo giorno di servizio (tmk_location_is_active), che
+ * per WordPress restano "piene" perche' il post e' ancora pubblicato. Senza questo passaggio una
+ * citta' chiusa continuerebbe a comparire in "Altri ristoranti Temakinho" e fra le bande citta'.
  *
  * @return WP_Term[]
  */
 function tmk_ordered_city_terms() {
 	$terms = get_terms( array( 'taxonomy' => 'city', 'hide_empty' => true, 'orderby' => 'name' ) );
 	if ( is_wp_error( $terms ) || ! $terms ) {
+		return array();
+	}
+	$terms = array_values( array_filter( $terms, function ( $term ) {
+		return tmk_city_active_count( $term ) > 0;
+	} ) );
+	if ( ! $terms ) {
 		return array();
 	}
 	$rank    = array_flip( tmk_canonical_city_slugs() );
@@ -329,7 +381,9 @@ function tmk_render_city_bands( $atts = array() ) {
 	$anchors = array();
 	$others  = array();
 	foreach ( tmk_ordered_city_terms() as $term ) {
-		if ( (int) $term->count > 1 ) {
+		// Sedi ATTIVE, non $term->count: una citta' che resta con una sola sede aperta deve
+		// scendere fra "Le altre citta'" invece di tenere la propria banda a tutta larghezza.
+		if ( tmk_city_active_count( $term ) > 1 ) {
 			$anchors[] = $term;
 		} else {
 			$others[] = $term;
@@ -356,14 +410,15 @@ function tmk_render_city_bands( $atts = array() ) {
 		<?php
 		$is_first = true;
 		foreach ( $anchors as $term ) :
-			$media_id  = (int) get_term_meta( $term->term_id, 'hero_image_id', true );
-			$locations = get_posts( array(
-				'post_type'      => 'location',
-				'posts_per_page' => -1,
-				'orderby'        => 'title',
-				'order'          => 'ASC',
-				'tax_query'      => array( array( 'taxonomy' => 'city', 'field' => 'term_id', 'terms' => $term->term_id ) ),
-			) );
+			// 2026-09-08: stesso helper delle card (tmk_city_cover_media_id) invece della lettura
+			// diretta di hero_image_id. Questo $media_id NON e' la foto della banda — quella la
+			// risolve gia' tmk_render_city_card() — ma la fotografia passata alle card ristorante
+			// dentro la banda: senza ripiego, una citta' con 2+ sedi e senza foto di termine le
+			// renderebbe tutte senza immagine. Milano e Roma hanno la propria foto, quindi oggi il
+			// risultato non cambia: chiude un difetto latente, non un difetto visibile.
+			$media_id  = tmk_city_cover_media_id( $term );
+			// Le sole sedi ancora in servizio, dalla stessa fonte usata da ogni altro elenco.
+			$locations = tmk_city_active_locations( $term );
 			?>
 			<div class="tmk-city-bands__block">
 <?php
@@ -416,10 +471,13 @@ function tmk_render_city_bands( $atts = array() ) {
 				<?php
 				$cards = '';
 				foreach ( $others as $term ) {
-					$count  = (int) $term->count;
+					// Stesse due regole della card citta' qui sopra: conteggio delle sedi ATTIVE e
+					// foto di ripiego quando il termine non ha una propria immagine (Reggio
+					// Calabria non ne ha una, e senza questo la card usciva vuota).
+					$count  = tmk_city_active_count( $term );
 					$cards .= tmk_render_card( array(
 						'variant'  => 'location',
-						'media_id' => (int) get_term_meta( $term->term_id, 'hero_image_id', true ),
+						'media_id' => tmk_city_cover_media_id( $term ),
 						'eyebrow'  => $count . ' ' . ( 1 === $count ? 'ristorante' : 'ristoranti' ),
 						'title'    => $term->name,
 						'action'   => 'Esplora',

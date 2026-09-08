@@ -33,7 +33,8 @@ function tmk_render_booking_widget( $atts = array() ) {
 	), $atts );
 
 	$tier  = (int) $atts['tier'];
-	$url   = $atts['booking_url'] ? $atts['booking_url'] : home_url( '/#prenota' );
+	// 2026-09-07: ripiego sulla destinazione governata invece dell'ancora /#prenota, che non esiste.
+	$url   = $atts['booking_url'] ? $atts['booking_url'] : ( defined( 'TMK_BOOKING_URL' ) ? TMK_BOOKING_URL : home_url( '/#prenota' ) );
 	$label = $atts['label'] ? $atts['label'] : 'Prenota';
 
 	if ( $tier <= 1 ) {

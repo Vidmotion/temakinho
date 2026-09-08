@@ -24,16 +24,16 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-/** The `location` posts filed under a city term, in a stable order (title ASC, as the Homepage). */
+/**
+ * The `location` posts filed under a city term, in a stable order (title ASC, as the Homepage).
+ *
+ * 2026-09-07: delega a tmk_city_active_locations() (inc/content-model.php), che aggiunge il solo
+ * filtro delle sedi oltre il proprio ultimo giorno di servizio. Stessa query, stesso ordine: cosi'
+ * la collezione di una citta' non puo' mostrare un ristorante che l'indice /ristoranti/ ha gia'
+ * tolto.
+ */
 function tmk_city_locations( $term ) {
-	return get_posts( array(
-		'post_type'      => 'location',
-		'post_status'    => 'publish',
-		'posts_per_page' => -1,
-		'orderby'        => 'title',
-		'order'          => 'ASC',
-		'tax_query'      => array( array( 'taxonomy' => 'city', 'field' => 'term_id', 'terms' => $term->term_id ) ),
-	) );
+	return tmk_city_active_locations( $term );
 }
 
 function tmk_render_city( $term = null ) {
@@ -51,7 +51,14 @@ function tmk_render_city( $term = null ) {
 	$hero_id   = (int) get_term_meta( $term->term_id, 'hero_image_id', true );
 
 	$locations    = tmk_city_locations( $term );
-	$booking_href = home_url( '/#prenota' );
+	/*
+	 * 2026-09-07. Era home_url( '/#prenota' ), cioe' https://temakinho.com/#prenota: un'ancora che
+	 * sul sito in produzione non esiste da nessuna parte. Verificato sulla pagina servita: le due
+	 * "Prenota" di /ristoranti/roma/ (CTA dell'hero e fascia di chiusura) puntavano entrambe li' e
+	 * non portavano da nessuna parte. Ora usano la stessa destinazione governata di tutto il resto
+	 * del sito, esattamente come gia' fanno footer-render, contact-render ed event-render.
+	 */
+	$booking_href = defined( 'TMK_BOOKING_URL' ) ? TMK_BOOKING_URL : home_url( '/#prenota' );
 
 	ob_start();
 
@@ -169,6 +176,19 @@ function tmk_render_restaurants_index() {
 	if ( is_wp_error( $terms ) ) {
 		$terms = array();
 	}
+	/*
+	 * 2026-09-07 — richiesta cliente: Capo d'Orlando esce dal sito da lunedi' 14, ultimo giorno di
+	 * servizio domenica 13.
+	 *
+	 * `hide_empty` non basta: per WordPress una citta' e' "piena" finche' il post della sede e'
+	 * pubblicato, e la sede resta pubblicata di proposito (la sua pagina, le foto e gli orari non
+	 * si buttano via per toglierla da un elenco). Il filtro guarda la data di chiusura di ogni
+	 * sede — vedi tmk_location_is_active() — quindi la citta' sparisce da sola il giorno giusto,
+	 * senza che nessuno debba ricordarsi di intervenire, e ricompare svuotando la data.
+	 */
+	$terms = array_values( array_filter( $terms, function ( $term ) {
+		return tmk_city_active_count( $term ) > 0;
+	} ) );
 
 	ob_start();
 

@@ -14,17 +14,21 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+/*
+ * 2026-09-07: le sedi elencate qui passano dal filtro delle chiusure (tmk_city_active_locations),
+ * come ogni altro elenco pubblico, cosi' un ristorante che ha finito il servizio non resta nel
+ * menu a tendina delle citta'.
+ *
+ * ATTENZIONE, per chi legge dopo: il menu di testata SERVITO in produzione NON viene da qui. La
+ * testata e' un template Elementor (#25) con un widget nav-menu, e quel menu e' una voce di menu
+ * di WordPress salvata nel database: va aggiornata in Aspetto -> Menu. Questa funzione e' la
+ * versione del plugin, oggi non usata dal front end.
+ */
 function tmk_get_cities_with_locations() {
 	$cities = get_terms( array( 'taxonomy' => 'city', 'hide_empty' => false, 'orderby' => 'name' ) );
 	$out = array();
 	foreach ( $cities as $city ) {
-		$locations = get_posts( array(
-			'post_type' => 'location',
-			'posts_per_page' => -1,
-			'orderby' => 'title',
-			'order' => 'ASC',
-			'tax_query' => array( array( 'taxonomy' => 'city', 'field' => 'term_id', 'terms' => $city->term_id ) ),
-		) );
+		$locations = tmk_city_active_locations( $city );
 		if ( empty( $locations ) ) continue;
 		$locs = array();
 		foreach ( $locations as $loc ) {
@@ -77,7 +81,8 @@ function tmk_nav_destination( $label ) {
 function tmk_render_header( $atts = array() ) {
 	$atts = shortcode_atts( array(
 		'active' => '',
-		'booking_href' => home_url( '/#prenota' ),
+		// 2026-09-07: ripiego sulla destinazione governata invece dell'ancora /#prenota.
+		'booking_href' => defined( 'TMK_BOOKING_URL' ) ? TMK_BOOKING_URL : home_url( '/#prenota' ),
 	), $atts );
 
 	$primary_items = array( 'Ristoranti', 'Menù', 'Storie', 'Eventi', 'Shop', 'Lavora con Noi' );

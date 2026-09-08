@@ -7,8 +7,14 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 function tmk_cta_banner_defaults( $variant ) {
+	// 2026-09-07: la destinazione di ripiego di "Prenota" era l'ancora /#prenota, che sul sito non
+	// esiste. Ora e' la stessa destinazione governata usata da footer, contatti, eventi e schede
+	// ristorante, cosi' nessuna fascia di conversione puo' finire in un link che non porta da
+	// nessuna parte. `delivery` resta su /#ordina: la destinazione dell'asporto e' ancora sul
+	// vecchio dominio (vedi TMK_ORDER_URL) ed e' una decisione aperta, non un refuso.
+	$booking_href = defined( 'TMK_BOOKING_URL' ) ? TMK_BOOKING_URL : home_url( '/#prenota' );
 	$defaults = array(
-		'booking'    => array( 'title' => 'Il tuo tavolo ti aspetta', 'copy' => 'Scegli data e ora. Nessuna sorpresa, solo alegria.', 'label' => 'Prenota ora', 'href' => home_url( '/#prenota' ) ),
+		'booking'    => array( 'title' => 'Il tuo tavolo ti aspetta', 'copy' => 'Scegli data e ora. Nessuna sorpresa, solo alegria.', 'label' => 'Prenota ora', 'href' => $booking_href ),
 		'newsletter' => array( 'title' => 'Resta nel nostro mondo', 'copy' => 'Storie, aperture e inviti — una volta al mese, niente di più.', 'label' => 'Iscriviti', 'href' => '#newsletter' ),
 		'delivery'   => array( 'title' => 'Temakinho a casa tua', 'copy' => 'La stessa cucina, il tuo divano.', 'label' => 'Ordina', 'href' => home_url( '/#ordina' ) ),
 	);

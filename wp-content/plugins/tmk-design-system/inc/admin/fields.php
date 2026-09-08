@@ -147,6 +147,20 @@ function tmk_admin_field_schema() {
 				array( 'type' => 'note', 'label' => 'Dove porta “Prenota” adesso', 'render' => 'tmk_admin_note_location_booking' ),
 			),
 		),
+		/*
+		 * STATO DELLA SEDE — l'unico campo del sito che decide se un ristorante compare o no.
+		 * Aggiunto il 2026-09-07 perche' non esisteva: prima di questo, l'unico modo di togliere
+		 * una sede dal sito era metterla in bozza o cancellarla, cioe' far sparire anche la sua
+		 * pagina, le sue foto e il suo indirizzo web.
+		 */
+		array(
+			'id' => 'tmk_loc_status', 'title' => 'Ristorante — stato', 'context' => 'side',
+			'fields' => array(
+				array( 'key' => 'tmk_location_closing_date', 'label' => 'Ultimo giorno di servizio', 'type' => 'date',
+					'desc' => 'Lascialo vuoto se il ristorante è aperto. Se lo compili, la sede resta visibile per tutto quel giorno e dal giorno dopo sparisce dagli elenchi — pagina Ristoranti, pagina della città, “Altri ristoranti Temakinho” e bande della home. La scheda, le foto e gli orari restano dove sono. Il riquadro “Stato attuale” qui sotto dice sempre com’è messa la sede in questo momento.' ),
+				array( 'type' => 'note', 'label' => 'Stato attuale', 'render' => 'tmk_admin_note_location_status' ),
+			),
+		),
 	);
 
 	/* -------------------------------------------------------------------------- MENU (menu_item) */
@@ -647,6 +661,35 @@ function tmk_admin_note_location_booking( $post ) {
 		return 'All’indirizzo salvato in precedenza: <code>' . esc_html( $legacy ) . '</code>';
 	}
 	return 'Alla destinazione generale del sito: <code>' . esc_html( defined( 'TMK_BOOKING_URL' ) ? TMK_BOOKING_URL : home_url( '/' ) ) . '</code>';
+}
+
+/**
+ * Stato pubblico della sede, detto in chiaro nella scheda: e' l'unico posto dove un redattore puo'
+ * accorgersi che un ristorante non compare piu' negli elenchi, e perche'.
+ *
+ * Distingue le due origini possibili della data — il campo qui sopra, oppure la mappa delle
+ * chiusure gia' decise nel plugin (tmk_location_closing_dates) — perche' si annullano in due modi
+ * diversi, e non dirlo lascerebbe qualcuno a svuotare un campo gia' vuoto.
+ */
+function tmk_admin_note_location_status( $post ) {
+	$closing = tmk_location_closing_date( $post->ID );
+	if ( '' === $closing ) {
+		return 'La sede <b>compare</b> in tutti gli elenchi del sito.';
+	}
+
+	$stored   = '' !== trim( (string) get_post_meta( $post->ID, 'tmk_location_closing_date', true ) );
+	$ts       = strtotime( $closing );
+	$readable = $ts ? wp_date( 'j F Y', $ts ) : $closing;
+
+	$out = tmk_location_is_active( $post->ID )
+		? 'Ultimo giorno di servizio: <b>' . esc_html( $readable ) . '</b>. Fino a tutto quel giorno la sede compare normalmente; dal giorno dopo <b>sparisce dagli elenchi</b>.'
+		: 'Servizio concluso il <b>' . esc_html( $readable ) . '</b>: la sede <b>non compare più negli elenchi</b>. La scheda, le foto e il suo indirizzo web restano attivi.';
+
+	$out .= $stored
+		? '<br />Data impostata in questo campo: per rimettere la sede in elenco, svuotalo.'
+		: '<br />Questa data <b>non</b> arriva dal campo qui sopra, ma da una chiusura già concordata e scritta nel plugin (<code>tmk_location_closing_dates()</code> in <code>inc/content-model.php</code>). Scrivere una data nel campo la sostituisce; per annullare del tutto la chiusura serve invece un intervento sul plugin.';
+
+	return $out;
 }
 
 function tmk_admin_note_event_where( $post ) {
