@@ -528,9 +528,21 @@ function tmk_register_application_meta() {
      - /ristoranti/{citta}/ (collezione della citta')    inc/city-render.php
      - "Altri ristoranti Temakinho" sulla scheda sede    inc/location-render.php + widget Elementor
      - bande citta' della Home (renderer dinamico)       inc/card-render.php
-   NON puo' agire su cio' che vive nel database come contenuto Elementor o come voce di menu: la
-   Home attuale (#36), il menu di testata e il <select> della pagina /prenota/ (#13752) sono
-   scritti a mano li' dentro e vanno aggiornati in wp-admin. Vedi il report della sessione.
+     - la rotta /ristoranti/{citta}/ stessa              inc/city-routing.php  (0 sedi attive -> 404)
+     - le voci di menu che puntano a una sede            questo file, filtro wp_get_nav_menu_items
+   NON puo' agire su cio' che vive nel database come contenuto Elementor scritto a mano: la Home
+   attuale (#36) e il <select> della pagina /prenota/ (#13752) vanno aggiornati in wp-admin. Vedi
+   il report della sessione.
+
+   AGGIORNAMENTO 2026-09-14 — la scheda della sede viene ORA RITIRATA DEL TUTTO.
+   Il blocco qui sotto spiega perche' la logica delle date, da sola, non tocca lo stato del post:
+   toglie dagli elenchi e lascia la scheda raggiungibile. Per Capo d'Orlando il cliente ha poi
+   chiesto la rimozione integrale dal sito pubblico, quindi il post #24 e' stato messo in BOZZA in
+   wp-admin — che e' esattamente la "scelta editoriale" che il blocco qui sotto lasciava aperta, e
+   non un cambio di modello. Le due cose sono complementari e convivono: la bozza fa 404 i
+   permalink e toglie la sede da ricerca e sitemap; la data di chiusura continua a governare gli
+   ELENCHI, e resta la sola cosa da compilare per una chiusura futura. Nessun dato e' stato
+   cancellato: scheda, foto, orari e meta sono intatti e ripubblicare il post ripristina tutto.
    ============================================================================================== */
 
 /**
@@ -658,3 +670,102 @@ function tmk_city_active_locations( $term ) {
 function tmk_city_active_count( $term ) {
 	return count( tmk_city_active_locations( $term ) );
 }
+
+/* ------------------------------------------------------------------------------------------------
+   LE VOCI DI MENU CHE PUNTANO A UNA SEDE NON PIU' PUBBLICA.
+
+   Il blocco "DOVE VIENE APPLICATA" qui sopra elencava il mega-menu di testata fra le superfici che
+   questa logica NON poteva raggiungere, perche' una voce di menu e' un record nel database scritto
+   a mano in wp-admin e non un elenco generato da una query. Conseguenza pratica: la sede spariva da
+   /ristoranti/, dalle pagine citta' e dalla Home, e restava linkata dall'intestazione di OGNI
+   pagina del sito — il punto piu' visibile che esista.
+
+   Questo filtro chiude quel buco senza spostare la logica altrove: il menu continua a essere
+   contenuto editoriale, ma una voce che punta a una sede non piu' pubblica non viene servita.
+
+   COME RICONOSCE LA VOCE. Il collegamento e' di tipo "custom" (una URL scritta a mano), quindi non
+   c'e' un object_id da interrogare: si guarda l'ULTIMO segmento della URL, che nelle rotte di
+   questo sito e' sempre lo slug della sede (/ristoranti/{citta}/{sede}/ e la vecchia
+   /ristoranti/{sede}/). Se quello slug e' un post `location`, la voce vive o muore con esso —
+   pubblicato E attivo secondo tmk_location_is_active(). Uno slug che non e' una sede non viene
+   toccato, quindi ogni altra voce del menu passa inalterata.
+
+   NON E' UN CASO SPECIALE. Non nomina nessuna sede: vale per qualunque ristorante venga chiuso o
+   spostato in bozza, adesso e in futuro, e la voce ricompare da sola se la sede torna pubblica.
+   E' anche il motivo per cui la voce NON viene cancellata da wp-admin: cancellarla sarebbe
+   irreversibile e costringerebbe a ricostruirla a mano in caso di riapertura.
+
+   Non agisce nell'area di amministrazione: in wp-admin l'editor del menu deve continuare a vedere
+   (e poter modificare) la voce, altrimenti salvare il menu la perderebbe silenziosamente.
+   ---------------------------------------------------------------------------------------------- */
+
+/**
+ * Lo slug in coda a una URL corrisponde a una sede NON piu' pubblica?
+ *
+ * @param string $url
+ * @return bool
+ */
+function tmk_url_points_to_hidden_location( $url ) {
+	static $cache = array();
+
+	$url = trim( (string) $url );
+	if ( '' === $url ) {
+		return false;
+	}
+	if ( isset( $cache[ $url ] ) ) {
+		return $cache[ $url ];
+	}
+
+	$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+	$slug = basename( untrailingslashit( $path ) );
+	if ( '' === $slug ) {
+		return $cache[ $url ] = false;
+	}
+
+	$location = get_page_by_path( $slug, OBJECT, 'location' );
+	if ( ! $location instanceof WP_Post ) {
+		return $cache[ $url ] = false;
+	}
+
+	$hidden = ( 'publish' !== $location->post_status ) || ! tmk_location_is_active( $location );
+	return $cache[ $url ] = $hidden;
+}
+
+add_filter( 'wp_get_nav_menu_items', function ( $items ) {
+	if ( is_admin() || ! is_array( $items ) ) {
+		return $items;
+	}
+
+	$drop = array();
+	foreach ( $items as $item ) {
+		$is_location = ( 'location' === $item->object && 'post_type' === $item->type );
+		$hidden      = $is_location
+			? ! tmk_location_is_active( (int) $item->object_id ) || 'publish' !== get_post_status( (int) $item->object_id )
+			: tmk_url_points_to_hidden_location( $item->url );
+		if ( $hidden ) {
+			$drop[ (int) $item->ID ] = true;
+		}
+	}
+	if ( ! $drop ) {
+		return $items;
+	}
+
+	/*
+	 * Una voce eliminata si porta dietro i propri figli, altrimenti resterebbero nel menu come
+	 * orfani agganciati a un genitore che non c'e' piu'. Il ciclo ripete finche' non trova piu'
+	 * discendenti, cosi' vale a qualunque profondita'.
+	 */
+	do {
+		$found = false;
+		foreach ( $items as $item ) {
+			if ( isset( $drop[ (int) $item->menu_item_parent ] ) && ! isset( $drop[ (int) $item->ID ] ) ) {
+				$drop[ (int) $item->ID ] = true;
+				$found                   = true;
+			}
+		}
+	} while ( $found );
+
+	return array_values( array_filter( $items, function ( $item ) use ( $drop ) {
+		return ! isset( $drop[ (int) $item->ID ] );
+	} ) );
+}, 10, 1 );

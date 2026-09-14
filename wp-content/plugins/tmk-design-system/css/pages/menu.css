@@ -343,6 +343,12 @@
 .tmk-menu-dishes--single{grid-template-columns:minmax(0,1fr)}
 
 .tmk-menu-dish{display:grid;gap:6px;min-width:0}
+/* The 6px rhythm between a dish's own lines moves onto __content, so that a dish WITH a photo can
+   use its own grid for the two columns without collapsing that rhythm. For a dish WITHOUT a photo
+   the <li> is left with exactly one child, so the outer grid has nothing to space and the row
+   renders pixel-identical to what it was before the photo existed - which is the point: only the
+   dishes that gained a photograph change. */
+.tmk-menu-dish__content{display:grid;gap:6px;min-width:0}
 /* The description is the only long-form text in a dish, and between 600px and 699px the list is
    still one column ~550px wide. Capping the measure there costs nothing at any other width, and
    the name row stays full width so the dotted leader still reaches the price. In this typeface
@@ -400,6 +406,127 @@
   font-variant-numeric:tabular-nums;
 }
 .tmk-menu-dish .tmk-card__tags{margin:0}
+
+/* ── MINIATURA + POPUP DELLA FOTO ───────────────────────────────────────────────────────────
+   Only .tmk-menu-dish--photo is touched here, so a dish without a photograph keeps the layout it
+   already had, at every breakpoint.
+
+   The thumbnail is a fixed square in the first column rather than a fluid share of the row: a
+   percentage width would make the photo grow with the column, and at 1440px a two-column list
+   gives each dish ~450px - a 30% thumb would be 135px, which stops being a marker and starts
+   being a card. A fixed 72/88px keeps the dish a LINE OF A MENU with a photo attached, which is
+   what the page is. `align-items:start` pins it to the dish name rather than centring it against
+   a description of unpredictable length. */
+.tmk-menu-dish--photo{
+  grid-template-columns:auto minmax(0,1fr);
+  column-gap:var(--space-3);
+  align-items:start;
+}
+/* The class is CHAINED to the dish's, and that is load-bearing, not a style choice.
+   The active kit ships `.elementor-kit-5 button { background-color:<ember>; padding:14px 28px }`
+   at (0,1,1) — a real <button> on this site is an ember pill unless something beats that. A
+   single-class selector (0,1,0) loses, and the thumbnail rendered as an orange square with the
+   photograph squeezed into the 32x60 box the kit's padding left behind. `.tmk-menu-dish
+   .tmk-menu-dish__thumb` is (0,2,0) and wins outright — no !important, no dependency on which
+   stylesheet happens to load last. Same lever already used for the hours table and the
+   trust-band centring. */
+.tmk-menu-dish .tmk-menu-dish__thumb{
+  /* A button, not a link: the photo has no destination, it opens a dialog (same reasoning as
+     tmk_menu_dish_html()'s note on why a dish is not a link). Reset the UA + kit button chrome. */
+  display:block;
+  padding:0;
+  border:0;
+  background:none;
+  cursor:zoom-in;
+  width:72px;
+  height:72px;
+  border-radius:var(--radius-soft);
+  overflow:hidden;
+  /* The photographs are cropped to different aspect ratios; the square is enforced here so the
+     list keeps one rhythm no matter what was uploaded. */
+  background-color:var(--color-surface-sunken);
+  transition:transform var(--motion-feedback) var(--ease-out),box-shadow var(--motion-feedback) var(--ease-out);
+}
+.tmk-menu-dish .tmk-menu-dish__thumb img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.tmk-menu-dish .tmk-menu-dish__thumb:hover{transform:scale(1.03);box-shadow:var(--elevation-raised)}
+.tmk-menu-dish .tmk-menu-dish__thumb:focus-visible{outline:var(--focus-ring);outline-offset:2px}
+@media (min-width:768px){
+  .tmk-menu-dish .tmk-menu-dish__thumb{width:88px;height:88px}
+}
+@media (prefers-reduced-motion:reduce){
+  .tmk-menu-dish .tmk-menu-dish__thumb{transition:none}
+  .tmk-menu-dish .tmk-menu-dish__thumb:hover{transform:none}
+}
+
+/* The opened photograph. max-height keeps a tall portrait inside the viewport instead of forcing
+   the panel to scroll, and the caption repeats the dish name the dialog is labelled with. */
+.tmk-menu-dish__figure{margin:0;display:grid;gap:var(--space-3);justify-items:center}
+.tmk-menu-dish__figure img{
+  display:block;
+  max-width:100%;
+  max-height:72vh;
+  width:auto;
+  height:auto;
+  border-radius:var(--radius-soft);
+}
+.tmk-menu-dish__figure figcaption{
+  font-family:var(--font-structure);
+  font-size:var(--text-body-small);
+  font-weight:var(--weight-structure-bold);
+  letter-spacing:0.02em;
+  text-transform:uppercase;
+  text-align:center;
+  color:var(--color-text-primary);
+}
+
+/* Featured frames and stars are decorative, outside the shared content grid.
+   Extra row spacing leaves room for stars above consecutive frames. */
+.tmk-menu-dishes:has(> .tmk-menu-dish--featured){row-gap:32px}
+.tmk-menu-dish--featured{
+  position:relative;
+  padding:0;
+  margin:0;
+  border:0;
+  background:transparent;
+}
+.tmk-menu-dish--featured::before{
+  content:"";
+  position:absolute;
+  inset:-10px -14px;
+  border:2px solid var(--color-action-primary);
+  border-radius:var(--radius-soft);
+  pointer-events:none;
+}
+.tmk-menu-dish--featured .tmk-menu-dish__name,
+.tmk-menu-dish--featured .tmk-menu-dish__price{color:var(--color-action-primary-on-light)}
+.tmk-menu-dish--featured .tmk-menu-dish__leader{border-bottom-color:var(--color-action-primary)}
+
+/* Page-coloured square behind the PNG, centred on the frame's upper-left corner. */
+.tmk-menu-dish__star{
+  position:absolute;
+  top:-10px;
+  left:-14px;
+  transform:translate(-50%,-50%);
+  z-index:1;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:24px;
+  height:24px;
+  background:var(--color-surface) url("menu-featured-star.png") center / contain no-repeat;
+  pointer-events:none;
+  color:var(--color-action-primary);
+}
+.tmk-menu-dish__star-icon{display:none}
+@media (max-width:767px){
+  .tmk-menu-dish--featured::before{inset:-7px -4px}
+  .tmk-menu-dish__star{top:-7px;left:-4px}
+}
 
 /* ── Info & allergeni ───────────────────────────────────────────────────────────────────── */
 .tmk-menu-note{

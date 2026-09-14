@@ -29,23 +29,52 @@ add_action( 'init', function () {
 	add_rewrite_rule( '^ristoranti/([^/]+)/?$', 'index.php?city=$matches[1]', 'top' );
 }, 10 );
 
-/** Single-location cities collapse to their sole restaurant (Terminal), never a one-card page. */
+/**
+ * Una citta' vale quanto le sue sedi ANCORA PUBBLICHE, e il conteggio da cui dipende e' quello
+ * del modello (tmk_city_active_locations), non $term->count.
+ *
+ * Tre esiti, in quest'ordine:
+ *
+ *   0 sedi attive -> 404. E' il caso di una citta' che ha chiuso: il termine resta nel database
+ *     con la sua foto e il suo testo, ma /ristoranti/{citta}/ non ha piu' niente da collezionare.
+ *     Senza questo ramo la pagina rispondeva 200 e mostrava una collezione VUOTA — peggio di un
+ *     404, perche' e' una pagina pubblica che afferma l'esistenza di qualcosa che non c'e' piu',
+ *     e i motori di ricerca la tengono indicizzata. set_404() azzera i flag condizionali, quindi
+ *     is_tax() diventa falsa da qui in poi e il 404 del sito viene servito dal suo template
+ *     normale: nessun redirect verso una pagina arbitraria, nessuna pagina bianca.
+ *
+ *   1 sede attiva -> il 301 verso il Terminal che questo file gia' faceva (CityMilano.jsx,
+ *     "Single-location cities collapse toward Terminal"). Ora il conteggio e' quello delle sedi
+ *     ATTIVE, cosi' una citta' che ne aveva due e ne ha chiusa una collassa correttamente
+ *     sull'unica rimasta invece di mostrare una collezione da una carta sola.
+ *
+ *   2+ -> la pagina Collezione, come prima.
+ *
+ * Il ramo 404 e' la logica GENERALE delle chiusure applicata alla rotta della citta': non
+ * nomina nessuna sede e si riattiva da solo se la citta' torna ad averne una pubblicata.
+ */
 add_action( 'template_redirect', function () {
 	if ( ! is_tax( 'city' ) ) {
 		return;
 	}
 	$term = get_queried_object();
-	if ( $term instanceof WP_Term && 1 === (int) $term->count ) {
-		$one = get_posts( array(
-			'post_type'      => 'location',
-			'post_status'    => 'publish',
-			'posts_per_page' => 1,
-			'tax_query'      => array( array( 'taxonomy' => 'city', 'field' => 'term_id', 'terms' => $term->term_id ) ),
-		) );
-		if ( $one ) {
-			wp_safe_redirect( get_permalink( $one[0]->ID ), 301 );
-			exit;
-		}
+	if ( ! $term instanceof WP_Term ) {
+		return;
+	}
+
+	$active = tmk_city_active_locations( $term );
+
+	if ( ! $active ) {
+		global $wp_query;
+		$wp_query->set_404();
+		status_header( 404 );
+		nocache_headers();
+		return;
+	}
+
+	if ( 1 === count( $active ) ) {
+		wp_safe_redirect( get_permalink( $active[0]->ID ), 301 );
+		exit;
 	}
 } );
 

@@ -67,6 +67,9 @@ function tmk_menu_i18n( $lang ) {
 			'alcohol_free'=> 'Alcohol free',
 			'veg'         => 'Veg',
 			'menu_label'  => 'Il menu',
+			// Fotografia del piatto: %s e' il nome del piatto nella lingua letta.
+			'photo_open'  => 'Apri la foto di %s',
+			'photo_close' => 'Chiudi la foto',
 		),
 		'en' => array(
 			'lang_nav'    => 'Menu language',
@@ -85,6 +88,8 @@ function tmk_menu_i18n( $lang ) {
 			'alcohol_free'=> 'Alcohol free',
 			'veg'         => 'Veg',
 			'menu_label'  => 'The menu',
+			'photo_open'  => 'Open the photo of %s',
+			'photo_close' => 'Close the photo',
 		),
 	);
 	return $s[ $lang ];
@@ -312,38 +317,173 @@ function tmk_menu_dish_html( $post, $lang, $s, $allergens ) {
 	// Lowercased haystack for the client-side filter, so it never has to touch the DOM text.
 	$haystack = strtolower( $title . ' ' . $desc );
 
+	/*
+	 * FOTOGRAFIA DEL PIATTO — l'Immagine in evidenza del post, quando c'e'.
+	 *
+	 * E' il campo standard di WordPress, non un secondo campo dedicato: la collaboratrice carica
+	 * la foto dalla schermata che gia' conosce e il piatto non ha due posti dove puo' stare
+	 * un'immagine. Un piatto senza foto non emette NIENTE di tutto questo — nessun contenitore
+	 * vuoto, nessuna classe in piu' — quindi le righe senza fotografia restano esattamente la
+	 * riga che erano prima (vedi css/pages/menu.css, blocco MINIATURA).
+	 *
+	 * Il popup riusa il Modal gia' esistente (js/interactions/modal.js) con la stessa forma della
+	 * Gallery: un modale per foto, aperto da un <button>. Nessun secondo pattern di lightbox e
+	 * zero JavaScript nuovo — apertura, Escape, scrim, focus trap e ritorno del focus sono gia'
+	 * implementati e verificati li'. Come nella Gallery, l'immagine grande e' loading="lazy"
+	 * dentro un antenato [hidden], percio' il file full non viene scaricato finche' qualcuno non
+	 * apre davvero il popup.
+	 *
+	 * L'alt viene dal NOME DEL PIATTO nella lingua letta, non dall'alt dell'allegato: il nome e'
+	 * il dato autorevole, e' gia' bilingue, e nessuna delle foto caricate ha un alt compilato.
+	 */
+	$thumb_id = (int) get_post_thumbnail_id( $id );
+	$modal_id = $thumb_id ? 'tmk-menu-photo-' . $id : '';
+
+	/*
+	 * "In evidenza" e' uno STATO DELLA RIGA, non piu' soltanto un'etichetta accanto al titolo.
+	 * Il chip testuale si leggeva come una delle tante marcature (accanto ad "Alcohol free") e
+	 * spariva in una lista di 168 voci; la riga marcata ora si riconosce da sola — cornice, fondo
+	 * e colore del nome — e la stella sta nell'angolo, dove fa da segno e non da parola.
+	 *
+	 * La classe si calcola qui, sull'elemento <li>, perche' e' il contenitore che la cornice deve
+	 * disegnare. Gli slug pubblicati sono con trattino ('alcohol-free'), il vocabolario dei chip
+	 * con underscore: la normalizzazione e' la stessa gia' usata piu' sotto, tenuta identica di
+	 * proposito cosi' non esistono due definizioni di cosa sia "star".
+	 */
+	$norm_labels = array_map( function ( $l ) { return str_replace( '-', '_', $l ); }, $labels );
+	$is_featured = in_array( 'star', $norm_labels, true );
+
+	/*
+	 * La stella esce dalla fila dei chip e diventa un contrassegno DELLA CARD, stampato come
+	 * figlio diretto del <li>. Non e' un dettaglio di markup: dentro .tmk-card__tags sarebbe
+	 * rimasta prigioniera del suo contenitore, e quando "star" e' l'unica etichetta quel
+	 * contenitore non ha nulla da mostrare — nasconderlo si porterebbe via anche la stella, che
+	 * pure e' posizionata in modo assoluto (display:none su un antenato cancella tutto il
+	 * sottoalbero). Qui il contenitore dei chip viene semplicemente non stampato quando resta
+	 * vuoto, e la stella vive per conto proprio nell'angolo della card.
+	 */
+	$chip_labels = array_values( array_diff( $norm_labels, array( 'star' ) ) );
+
+	$li_class = 'tmk-menu-dish'
+		. ( $thumb_id ? ' tmk-menu-dish--photo' : '' )
+		. ( $is_featured ? ' tmk-menu-dish--featured' : '' );
+
 	ob_start();
 	?>
-	<li class="tmk-menu-dish" data-menu-dish data-menu-find="<?php echo esc_attr( $haystack ); ?>">
-		<p class="tmk-menu-dish__head">
-			<span class="tmk-menu-dish__name"><?php echo esc_html( $title ); ?></span>
-			<span class="tmk-menu-dish__leader" aria-hidden="true"></span>
-			<?php if ( $price ) : ?><span class="tmk-menu-dish__price"><?php echo esc_html( $price ); ?></span><?php endif; ?>
-		</p>
-		<?php if ( $labels ) : ?>
-		<span class="tmk-card__tags">
-			<?php foreach ( $labels as $l ) : ?>
-				<span class="tmk-card__tag"><?php $k = str_replace( '-', '_', $l ); echo esc_html( isset( $chips[ $k ] ) ? $chips[ $k ] : $l ); ?></span>
-			<?php endforeach; ?>
+	<li class="<?php echo esc_attr( $li_class ); ?>" data-menu-dish data-menu-find="<?php echo esc_attr( $haystack ); ?>">
+		<?php if ( $is_featured ) : ?>
+		<span class="tmk-menu-dish__star">
+			<?php echo tmk_menu_star_svg(); ?>
+			<span class="tmk-sr-only"><?php echo esc_html( $s['featured'] ); ?></span>
 		</span>
 		<?php endif; ?>
-		<?php if ( $desc ) : ?><p class="tmk-menu-dish__desc"><?php echo esc_html( $desc ); ?></p><?php endif; ?>
-		<?php if ( $codes ) : ?>
-		<p class="tmk-menu-dish__allergens">
-			<span aria-hidden="true">(<?php echo esc_html( implode( ', ', $codes ) ); ?>)</span>
-			<span class="tmk-sr-only"><?php echo esc_html( $s['allergens'] . ': ' . implode( ', ', $names ) . '.' ); ?></span>
-		</p>
+		<?php if ( $thumb_id ) : ?>
+		<button type="button" class="tmk-menu-dish__thumb" data-tmk-modal-trigger="<?php echo esc_attr( $modal_id ); ?>"
+			aria-haspopup="dialog" aria-label="<?php echo esc_attr( sprintf( $s['photo_open'], $title ) ); ?>">
+			<?php echo wp_get_attachment_image( $thumb_id, 'medium', false, array(
+				'alt'      => '', // decorativa qui: il bottone si annuncia gia' col nome del piatto
+				'loading'  => 'lazy',
+				'decoding' => 'async',
+				'sizes'    => '(min-width: 768px) 88px, 72px',
+			) ); ?>
+		</button>
+		<?php endif; ?>
+		<div class="tmk-menu-dish__content">
+			<p class="tmk-menu-dish__head">
+				<span class="tmk-menu-dish__name"><?php echo esc_html( $title ); ?></span>
+				<span class="tmk-menu-dish__leader" aria-hidden="true"></span>
+				<?php if ( $price ) : ?><span class="tmk-menu-dish__price"><?php echo esc_html( $price ); ?></span><?php endif; ?>
+			</p>
+			<?php if ( $chip_labels ) : ?>
+			<span class="tmk-card__tags">
+				<?php foreach ( $chip_labels as $k ) : ?>
+					<span class="tmk-card__tag"><?php echo esc_html( isset( $chips[ $k ] ) ? $chips[ $k ] : $k ); ?></span>
+				<?php endforeach; ?>
+			</span>
+			<?php endif; ?>
+			<?php if ( $desc ) : ?><p class="tmk-menu-dish__desc"><?php echo esc_html( $desc ); ?></p><?php endif; ?>
+			<?php if ( $codes ) : ?>
+			<p class="tmk-menu-dish__allergens">
+				<span aria-hidden="true">(<?php echo esc_html( implode( ', ', $codes ) ); ?>)</span>
+				<span class="tmk-sr-only"><?php echo esc_html( $s['allergens'] . ': ' . implode( ', ', $names ) . '.' ); ?></span>
+			</p>
+			<?php endif; ?>
+		</div>
+		<?php if ( $thumb_id ) : ?>
+		<div class="tmk-modal tmk-modal--lightbox" data-tmk-modal id="<?php echo esc_attr( $modal_id ); ?>" hidden>
+			<div class="tmk-modal__scrim" data-tmk-modal-scrim></div>
+			<div class="tmk-modal__panel" role="dialog" aria-modal="true" aria-label="<?php echo esc_attr( $title ); ?>">
+				<button type="button" class="tmk-modal__close" data-tmk-modal-close aria-label="<?php echo esc_attr( $s['photo_close'] ); ?>">&#10005;</button>
+				<figure class="tmk-menu-dish__figure">
+					<?php echo wp_get_attachment_image( $thumb_id, 'large', false, array(
+						'alt'      => $title,
+						'loading'  => 'lazy',
+						'decoding' => 'async',
+						'sizes'    => '(min-width: 1080px) 1000px, 92vw',
+					) ); ?>
+					<figcaption><?php echo esc_html( $title ); ?></figcaption>
+				</figure>
+			</div>
+		</div>
 		<?php endif; ?>
 	</li>
 	<?php
 	return ob_get_clean();
 }
 
-/** Info & allergeni — the compliance section, rendered from code (see the file header). */
-function tmk_menu_info_html( $term, $lang, $s ) {
+/**
+ * La stellina dei piatti in evidenza.
+ *
+ * Sostituisce il chip testuale "In evidenza" / "Featured": sulla riga di un piatto la parola
+ * competeva col nome e col prezzo per la stessa attenzione, mentre il segno della fonte e' una
+ * stella. Resta un'icona, non un'emoji — coerente con le altre (ricerca, chevron, menu), stesso
+ * viewBox 24 e stesso currentColor, cosi' il colore arriva dal token del design system e non da
+ * un arancione scritto a mano. Il nome leggibile non sparisce: accanto all'icona c'e' sempre un
+ * .tmk-sr-only con la stessa parola di prima, quindi per uno screen reader nulla e' cambiato.
+ */
+function tmk_menu_star_svg() {
+	return '<svg class="tmk-menu-dish__star-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">'
+		. '<path d="M12 2.4l2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.42l-5.88 3.09 1.12-6.55L2.48 9.32l6.58-.96z"/>'
+		. '</svg>';
+}
+
+/**
+ * Info & allergeni — la sezione di conformita'.
+ *
+ * Gli allergeni e le due note legali restano codice, per il motivo scritto nell'intestazione del
+ * file (sono vocabolario regolamentato, non copy editoriale).
+ *
+ * IL COPERTO NO. Il coperto e' un PRODOTTO: ha un nome, un prezzo che il cliente cambia e, da
+ * questa sessione, una fotografia. Finche' e' stato una stringa dentro tmk_menu_info_content()
+ * non esisteva in wp-admin: chi aggiorna il menu non poteva trovarlo, non poteva correggerne il
+ * prezzo e non poteva assegnargli un'immagine, perche' non c'era nessun post da aprire. Ora e' un
+ * `menu_item` come gli altri 167, nella categoria informativa, e questa sezione lo disegna con lo
+ * STESSO renderer di ogni altro piatto — quindi eredita gratis prezzo tipografico, bilingue,
+ * miniatura e popup, senza una seconda riga di markup da tenere allineata.
+ *
+ * LA RELAZIONE NON E' UN ID SCRITTO NEL CODICE. Il legame e' la categoria: qualunque menu_item
+ * assegnato a `info-allergeni` compare qui, nell'ordine di sort_order, e si gestisce interamente
+ * da wp-admin (spostare il coperto altrove, aggiungere una seconda voce informativa, cambiarne il
+ * prezzo). Nessun ID magico, niente da ritoccare nel plugin.
+ *
+ * La stringa storica resta come RIPIEGO e non come contenuto: se la categoria informativa e'
+ * vuota — prodotto cestinato, o un'installazione dove non e' mai stato creato — la riga del
+ * coperto continua a comparire invece di sparire in silenzio da un menu stampato che deve
+ * dichiararla.
+ */
+function tmk_menu_info_html( $node, $lang, $s, $allergens ) {
+	$term = $node['term'];
 	$c    = tmk_menu_info_content( $lang );
 	$list = tmk_menu_allergens( $lang );
 	$slug = 'menu-' . $term->slug;
+
+	$items = array();
+	foreach ( $node['groups'] as $group ) {
+		foreach ( $group['items'] as $item ) {
+			$items[] = $item;
+		}
+	}
+
 	ob_start();
 	?>
 	<section class="tmk-menu-spread tmk-menu-spread--info tmk-collapse" id="<?php echo esc_attr( $slug ); ?>" aria-labelledby="<?php echo esc_attr( $slug ); ?>-title" data-menu-section>
@@ -353,13 +493,19 @@ function tmk_menu_info_html( $term, $lang, $s ) {
 		</div>
 		<div class="tmk-menu-spread__body">
 			<ul class="tmk-menu-dishes tmk-menu-dishes--single">
-				<li class="tmk-menu-dish">
-					<p class="tmk-menu-dish__head">
-						<span class="tmk-menu-dish__name"><?php echo esc_html( $c['cover'] ); ?></span>
-						<span class="tmk-menu-dish__leader" aria-hidden="true"></span>
-						<span class="tmk-menu-dish__price"><?php echo esc_html( tmk_menu_price( $c['cover_price'], $lang ) ); ?></span>
-					</p>
-				</li>
+				<?php if ( $items ) : ?>
+					<?php foreach ( $items as $item ) { echo tmk_menu_dish_html( $item, $lang, $s, $allergens ); } ?>
+				<?php else : ?>
+					<li class="tmk-menu-dish">
+						<div class="tmk-menu-dish__content">
+							<p class="tmk-menu-dish__head">
+								<span class="tmk-menu-dish__name"><?php echo esc_html( $c['cover'] ); ?></span>
+								<span class="tmk-menu-dish__leader" aria-hidden="true"></span>
+								<span class="tmk-menu-dish__price"><?php echo esc_html( tmk_menu_price( $c['cover_price'], $lang ) ); ?></span>
+							</p>
+						</div>
+					</li>
+				<?php endif; ?>
 			</ul>
 			<p class="tmk-menu-note"><?php echo esc_html( $c['defrosted'] ); ?></p>
 			<p class="tmk-menu-note tmk-menu-note--fine"><?php echo esc_html( $c['raw_fish'] ); ?></p>
@@ -451,7 +597,7 @@ function tmk_render_menu_hub( $atts = array() ) {
 			$term = $node['term'];
 			$slug = 'menu-' . $term->slug;
 			if ( TMK_MENU_INFO_SLUG === $term->slug ) {
-				echo tmk_menu_info_html( $term, $lang, $s );
+				echo tmk_menu_info_html( $node, $lang, $s, $allergens );
 				continue;
 			}
 			?>
