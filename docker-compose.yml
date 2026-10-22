@@ -56,6 +56,7 @@ services:
             $$_SERVER['HTTP_HOST'] = $$_SERVER['HTTP_X_FORWARDED_HOST'];
         }
         define( 'DISALLOW_FILE_EDIT', true );
+        define( 'TMK_CV_PRIVATE_DIR', '/var/www/tmk-private/cv' );
     volumes:
       # Storage persistente, separato per tipo di dato.
       - temakinho_uploads:/var/www/html/wp-content/uploads
@@ -67,6 +68,10 @@ services:
       # hello-elementor e gli altri temi arrivano da wordpress.org e restano
       # nel volume, non nel repository.
       - temakinho_themes:/var/www/html/wp-content/themes
+      # Archivio riservato dei CV, FUORI dalla webroot: nessun URL lo raggiunge, i file si
+      # scaricano solo da wp-admin › Candidature (login + capability + nonce). Va incluso nei
+      # backup insieme a database e upload: contiene i CV e i manifesti della migrazione.
+      - temakinho_private:/var/www/tmk-private
     networks:
       - internal
       - dokploy-network
@@ -106,6 +111,7 @@ volumes:
   temakinho_uploads:
   temakinho_plugins:
   temakinho_themes:
+  temakinho_private:
 
 networks:
   # Rete di progetto: nessuna porta esposta sull'host. Non e' marcata

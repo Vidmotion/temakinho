@@ -667,12 +667,12 @@ add_shortcode( 'tmk_job_form', function ( $atts ) {
  * failed send is reported in the record rather than to the candidate. A real application must not
  * be lost because a mail transport is missing (see tmk_applications_recipient()).
  *
- * The CV becomes a real WordPress attachment so it is downloadable from the application's own
- * admin screen, but it is NOT attached to a public post and its record is private. Uploads go
- * through wp_handle_upload() with an explicit `mimes` allow-list, so the extension AND the sniffed
- * MIME must both match — an .exe renamed to .pdf is rejected by wp_check_filetype_and_ext(), which
- * that call performs internally. `test_form` is disabled because this is an AJAX POST, not a form
- * POST to the same URL wp_handle_upload expects; the nonce above is the real CSRF control.
+ * The CV becomes a real WordPress attachment (private, child of the application) whose file lives
+ * in the private archive outside the webroot — see inc/cv-storage.php and inc/cv-access.php. It is
+ * downloadable only from the "Candidature" admin page. tmk_cv_store_save_upload() applies the
+ * explicit `mimes` allow-list through wp_check_filetype_and_ext(), so the extension AND the sniffed
+ * MIME must both match, and then checks the file signature: an .exe renamed to .pdf is rejected.
+ * The nonce above is the CSRF control.
  */
 function tmk_handle_job_apply() {
 	if ( ! check_ajax_referer( 'tmk_job_apply', 'tmk_apply_nonce', false ) ) {
@@ -733,39 +733,37 @@ function tmk_handle_job_apply() {
 
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 	require_once ABSPATH . 'wp-admin/includes/media.php';
-	require_once ABSPATH . 'wp-admin/includes/image.php';
 
 	/*
-	 * The stored filename is randomised, and that is a privacy control, not tidiness.
-	 * WordPress' uploads directory is served directly by the web server: an attachment marked
-	 * `private` is hidden from the admin list and the REST API, but its FILE is still readable by
-	 * anyone who knows the URL - there is no capability check in front of /wp-content/uploads/.
-	 * A CV uploaded as "cv.pdf" or "mario-rossi-cv.pdf" therefore lands at a guessable address.
-	 * A 32-hex name makes the URL unguessable, which is the strongest mitigation available from
-	 * inside the plugin. It is NOT equivalent to access control - see the report: keeping
-	 * candidate documents genuinely private needs the uploads path protected at the server, or
-	 * the applications routed to an ATS, and that is a hosting decision.
+	 * [CV RISERVATI] Il CV va direttamente nell'archivio riservato (inc/cv-storage.php): un
+	 * volume FUORI dalla webroot, che nessun URL raggiunge. Prima il file finiva in
+	 * uploads/anno/mese/, servito dal web server senza alcun controllo (il nome casuale lo rendeva
+	 * solo difficile da indovinare) e con quattro anteprime JPG altrettanto pubbliche.
+	 *  - Nessuna anteprima: wp_generate_attachment_metadata() non viene chiamato.
+	 *  - Nessun ripiego: se l'archivio non e' disponibile la candidatura si ferma qui con un errore.
+	 *    Un CV raggiungibile da URL e' un esito peggiore di una candidatura da ripetere.
+	 *  - Estensione, tipo reale (finfo) e firma del file vengono verificati prima di salvarlo.
 	 */
-	$upload = wp_handle_upload( $_FILES['cv'], array(
-		'test_form' => false,
-		'mimes'     => $rules['mimes'],
-		'unique_filename_callback' => function ( $dir, $name, $ext ) {
-			return wp_generate_password( 32, false, false ) . $ext;
-		},
-	) );
-	if ( ! is_array( $upload ) || isset( $upload['error'] ) ) {
-		wp_send_json_error( array( 'message' => 'Formato non accettato. Invia il CV in ' . implode( ', ', array_map( 'strtoupper', array_keys( $rules['mimes'] ) ) ) . '.' ), 400 );
+	$stored = tmk_cv_store_save_upload( $_FILES['cv'], $rules['mimes'] );
+	if ( is_wp_error( $stored ) ) {
+		if ( 'tmk_cv_bad_type' === $stored->get_error_code() ) {
+			wp_send_json_error( array( 'message' => 'Formato non accettato. Invia il CV in ' . implode( ', ', array_map( 'strtoupper', array_keys( $rules['mimes'] ) ) ) . '.' ), 400 );
+		}
+		error_log( 'tmk_job_apply: CV non salvato: ' . $stored->get_error_code() . ' ' . $stored->get_error_message() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions
+		wp_send_json_error( array( 'message' => 'Non siamo riusciti a salvare il curriculum. Riprova tra qualche minuto.' ), 500 );
 	}
 
 	$cv_id = wp_insert_attachment( array(
-		'post_mime_type' => $upload['type'],
+		'post_mime_type' => $stored['type'],
 		'post_title'     => sprintf( 'CV %s %s', $first, $last ),
 		'post_status'    => 'private',
-	), $upload['file'] );
+	), $stored['file'] );
 	if ( is_wp_error( $cv_id ) || ! $cv_id ) {
+		@unlink( $stored['file'] ); // phpcs:ignore WordPress.PHP.NoSilencedErrors -- file mai registrato: non resta un CV senza candidatura
 		wp_send_json_error( array( 'message' => 'Non siamo riusciti a salvare il curriculum. Riprova.' ), 500 );
 	}
-	wp_update_attachment_metadata( $cv_id, wp_generate_attachment_metadata( $cv_id, $upload['file'] ) );
+	update_post_meta( $cv_id, '_tmk_cv', 1 );
+	wp_update_attachment_metadata( $cv_id, array( 'filesize' => (int) filesize( $stored['file'] ) ) );
 
 	$job_title = get_the_title( $job_id );
 	$app_id = wp_insert_post( array(
@@ -774,7 +772,8 @@ function tmk_handle_job_apply() {
 		'post_title'   => sprintf( '%s %s — %s', $first, $last, $job_title ),
 		'post_content' => $cover . ( $notes ? "\n\n---\n" . $notes : '' ),
 	), true );
-	if ( is_wp_error( $app_id ) ) {
+	if ( is_wp_error( $app_id ) || ! $app_id ) {
+		wp_delete_attachment( $cv_id, true ); // elimina anche il file nell'archivio (inc/cv-access.php)
 		wp_send_json_error( array( 'message' => 'Non siamo riusciti a registrare la candidatura. Riprova.' ), 500 );
 	}
 
@@ -806,8 +805,8 @@ function tmk_handle_job_apply() {
 		$cover,
 		'',
 		( $notes ? "Altre informazioni:\n" . $notes . "\n" : '' ),
-		'CV: ' . wp_get_attachment_url( $cv_id ),
-		'Scheda candidatura: ' . admin_url( 'post.php?post=' . (int) $app_id . '&action=edit' ),
+		// Nessun URL del file: il CV si apre solo dall'area riservata, dopo il login.
+		'Candidatura e CV (area riservata, serve il login): ' . tmk_cv_detail_url( $app_id ),
 	) );
 	$sent = wp_mail( $to, $subject, $body, array( 'Reply-To: ' . $first . ' ' . $last . ' <' . $email . '>' ) );
 	update_post_meta( $app_id, 'tmk_application_notified', $sent ? 1 : 0 );
@@ -845,9 +844,8 @@ add_action( 'manage_job_application_posts_custom_column', function ( $col, $post
 			if ( $phone ) { echo '<br><span>' . esc_html( $phone ) . '</span>'; }
 			break;
 		case 'tmk_cv':
-			$cv = (int) get_post_meta( $post_id, 'tmk_application_cv_id', true );
-			$url = $cv ? wp_get_attachment_url( $cv ) : '';
-			echo $url ? '<a href="' . esc_url( $url ) . '" download>Scarica</a>' : '&mdash;';
+			// Download protetto (login + capability + nonce), mai l'URL del file.
+			echo tmk_cv_attachment_id( $post_id ) ? '<a href="' . esc_url( tmk_cv_download_url( $post_id ) ) . '">Scarica</a>' : '&mdash;';
 			break;
 	}
 }, 10, 2 );

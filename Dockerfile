@@ -25,6 +25,11 @@ RUN a2enmod rewrite
 # wp-content/plugins e' un volume persistente.
 COPY wp-content/plugins/tmk-design-system/ /usr/src/tmk/plugins/tmk-design-system/
 
+# Archivio riservato dei CV: FUORI dalla webroot (/var/www/html), su un volume dedicato
+# (temakinho_private, vedi docker-compose.yml). Creato qui con proprietario www-data perche' un
+# volume nominato nuovo eredita proprietario e permessi della cartella dell'immagine.
+RUN install -d -o www-data -g www-data -m 0750 /var/www/tmk-private /var/www/tmk-private/cv
+
 # Entrypoint: sincronizza il plugin custom, poi passa il controllo
 # all'entrypoint ufficiale (che genera wp-config.php dalle variabili
 # d'ambiente e installa il core se la directory e' vuota).
@@ -42,6 +47,21 @@ mkdir -p "$target"
 rm -rf "$target/tmk-design-system"
 cp -a /usr/src/tmk/plugins/tmk-design-system "$target/tmk-design-system"
 chown -R www-data:www-data "$target/tmk-design-system"
+
+# Archivio CV: utilizzabile SOLO se /var/www/tmk-private e' davvero un volume montato. Il plugin
+# accetta un CV solo se trova .tmk-persistent, che viene scritto qui e soltanto in quel caso: senza
+# volume i CV finirebbero nello strato effimero del container e sparirebbero al deploy successivo,
+# quindi le candidature vengono rifiutate invece di salvare il file altrove.
+priv=/var/www/tmk-private
+if grep -qs " $priv " /proc/self/mountinfo; then
+  install -d -o www-data -g www-data -m 0750 "$priv" "$priv/cv" "$priv/manifest"
+  if [ ! -e "$priv/.tmk-persistent" ]; then
+    echo "volume persistente dell'archivio CV - creato $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$priv/.tmk-persistent"
+  fi
+  chown www-data:www-data "$priv/.tmk-persistent"
+else
+  echo "tmk-entrypoint: $priv non e' un volume montato: le candidature con CV verranno rifiutate" >&2
+fi
 
 exec docker-entrypoint.sh "$@"
 SCRIPT
