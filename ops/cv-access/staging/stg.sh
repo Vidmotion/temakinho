@@ -54,10 +54,12 @@ restore)
   ( cd "$B/plain" && sha256sum -c --quiet ../meta/SHA256SUMS.plain ) || die "checksum del backup non validi"
   dc "$sha" create --no-build 2>/dev/null || dc "$sha" create
   IMG=$(docker image inspect temakinho-agyavu-wordpress --format '{{.Id}}')
-  for pair in uploads:tmkstg_temakinho_uploads plugins:tmkstg_temakinho_plugins themes:tmkstg_temakinho_themes webroot:tmkstg_webroot; do
+  pairs="uploads:tmkstg_temakinho_uploads plugins:tmkstg_temakinho_plugins themes:tmkstg_temakinho_themes webroot:tmkstg_webroot"
+  [ -f "$B/plain/vol-private.tar.gz" ] && pairs="$pairs private:tmkstg_temakinho_private"
+  for pair in $pairs; do
     short=${pair%%:*}; vol=${pair#*:}; guard_vol "$vol"
     n=$(docker run --rm --entrypoint sh -v "$vol":/v "$IMG" -c 'find /v -mindepth 1 | wc -l')
-    [ "$n" -eq 0 ] || [ "$short" = webroot ] || die "volume $vol non vuoto ($n voci)"
+    [ "$n" -eq 0 ] || [ "$short" = webroot ] || [ "$short" = private ] || die "volume $vol non vuoto ($n voci)"
     echo "ripristino $short -> $vol"
     docker run --rm --entrypoint sh -v "$vol":/v -v "$B/plain":/b:ro -v "$B/meta":/m:ro "$IMG" -c \
       "set -e; find /v -mindepth 1 -delete; tar --numeric-owner -xzpf /b/vol-$short.tar.gz -C /v; cd /v && sha256sum -c --quiet /m/files-$short.sha256 && echo '  file verificati:' \$(wc -l < /m/files-$short.sha256)"

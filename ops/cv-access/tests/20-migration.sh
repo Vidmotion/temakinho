@@ -64,7 +64,9 @@ check "file pubblici ancora tutti presenti" 36 "$(public_left)"
 cx 'rm -f /tmp/tmk-test-fail-ref'
 
 section "11. Nuove candidature durante la migrazione"
-cx 'echo "copied-file sleep:1" > /tmp/tmk-test-checkpoint'
+# "copied" scatta per ogni allegato da migrare (anche se le copie erano gia' fatte): la migrazione
+# in background resta in corso abbastanza a lungo da provare il lock e gli invii concorrenti.
+cx 'echo "copied sleep:4" > /tmp/tmk-test-checkpoint'
 ( "$STG" wp tmk-cv migrate > "$STATE/mig-bg.out" 2>&1; echo $? > "$STATE/mig-bg.rc" ) &
 BG=$!
 sleep 2

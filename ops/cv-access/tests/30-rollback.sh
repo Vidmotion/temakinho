@@ -42,7 +42,8 @@ for i in $(seq 1 60); do [ "$(code "$URL/wp-includes/js/wp-emoji-loader.min.js")
 check "codice 1.21.3 attivo dopo il rollback" 1.21.3 "$(wp plugin get tmk-design-system --field=version)"
 check "volume privato ancora montato" si "$(cx 'grep -qs " /var/www/tmk-private " /proc/self/mountinfo && echo si || echo no')"
 docker cp "/root/tmk-staging/src/$NEW/wp-content/plugins/tmk-design-system/inc/cv-storage.php" "$WPC:/tmp/cv-storage.php"
-check "rollback-prepare con cv-storage.php caricato a mano (plugin 1.21.3)" 0 "$("$STG" wp eval 'require "/tmp/cv-storage.php"; exit( tmk_cv_store_cli( array( "rollback-prepare" ), array( "yes" => 1 ) ) );' > "$STATE/rb2.out" 2>&1; echo $?)"
+cx 'chmod 644 /tmp/cv-storage.php'   # docker cp conserva i permessi 600 di root: www-data deve poterlo leggere
+check "rollback-prepare con cv-storage.php caricato a mano (plugin 1.21.3)" 0 "$("$STG" wp eval 'require "/tmp/cv-storage.php"; exit( tmk_cv_store_cli( array( "rollback-prepare" ), array( "yes" => 1 ) ) );' > "$STATE/rb2.out" 2>&1 </dev/null; echo $?)"
 check "candidatura nella finestra: ora riferimento pubblico" "" "$(raw_ref "$(cv_of "$(app_by_last Finestra)")" | grep '^/var/www/tmk-private/')"
 check "nessuna candidatura persa" "$((N_BEFORE+1))" "$(allapps)"
 # con il codice 1.21.3 ogni CV e' di nuovo scaricabile dal link dell'elenco amministratore
@@ -55,6 +56,10 @@ while read -r app att sha; do
 	[ -n "$u" ] && [ "$(curl -s "$u" | sha256sum | cut -d' ' -f1)" = "$sha" ] || { bad=$((bad+1)); note "non scaricabile: candidatura $app"; }
 done < "$STATE/cv-shas-before-rollback"
 check "con 1.21.3 ogni CV (anche quelli arrivati dopo il rilascio) e' scaricabile e integro" "$n su $n" "$((n-bad)) su $n"
+check "verifica estesa a tutte le candidature non cestinate" "$(( $(wc -l < "$STATE/cv-shas-before-rollback") - 1 ))" "$n"
+FA=$(app_by_last Finestra); FATT=$(cv_of "$FA"); FU=$(grep -o "href=\"[^\"]*$(basename "$(abs_ref "$FATT")")\" download" "$STATE/rb-list.html" | sed 's/href="//;s/" download//' | head -1)
+[ -n "$FU" ] || { get "$ADMJ" '/wp-admin/edit.php?post_type=job_application&post_status=all&posts_per_page=100' "$STATE/rb-list.html" >/dev/null; FU=$(grep -o "href=\"[^\"]*$(basename "$(abs_ref "$FATT")")\" download" "$STATE/rb-list.html" | sed 's/href="//;s/" download//' | head -1); }
+check "candidatura nella finestra: CV scaricabile con 1.21.3" "$(sha256sum "$T/files/rb3.pdf" | cut -d' ' -f1)" "$(curl -s "$FU" | sha256sum | cut -d' ' -f1)"
 mkpdf rb4.pdf "CV FITTIZIO DURANTE IL ROLLBACK"; check "candidatura con il codice 1.21.3 durante il rollback" 200 "$(apply "$T/files/rb4.pdf" Prova Durante durante@staging.invalid cv.pdf)"
 
 section "16. Ritorno al codice nuovo dopo il rollback"

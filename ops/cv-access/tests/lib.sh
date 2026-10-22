@@ -22,10 +22,11 @@ lacks(){ if grep -q -- "$2" <<<"$3"; then ko "$1 (trovato «$2»)"; else ok "$1"
 summary(){ printf '== RISULTATO PARZIALE: %d superati, %d falliti\n' "$PASS" "$FAIL" | tee -a "$LOG"; echo "$PASS $FAIL" > "$STATE/counters"; }
 load_counters(){ [ -f "$STATE/counters" ] && read -r PASS FAIL < "$STATE/counters" || true; }
 
-wp(){ "$STG" wp "$@" 2>/dev/null; }
-wpe(){ "$STG" wp eval "$1" 2>/dev/null; }
-wpe_rc(){ "$STG" wp eval "$1" >/dev/null 2>&1; echo $?; }
-cvcli(){ "$STG" wp tmk-cv "$@" 2>&1; }
+# </dev/null: stg.sh usa docker exec -i, che altrimenti consumerebbe lo stdin di un "while read".
+wp(){ "$STG" wp "$@" 2>/dev/null </dev/null; }
+wpe(){ "$STG" wp eval "$1" 2>/dev/null </dev/null; }
+wpe_rc(){ "$STG" wp eval "$1" >/dev/null 2>&1 </dev/null; echo $?; }
+cvcli(){ "$STG" wp tmk-cv "$@" 2>&1 </dev/null; }
 sql(){ "$STG" sql -N 2>/dev/null; }
 cx(){ docker exec "$WPC" sh -c "$1"; }
 code(){ curl -s -o /dev/null -w '%{http_code}' "$@"; }
@@ -95,4 +96,12 @@ conv(){
 		"$URL/wp-admin/admin-ajax.php"
 }
 conv_ok(){ hphp -r '$j=json_decode(stream_get_contents(STDIN),true); echo !empty($j["success"]) ? "accettato" : "rifiutato"; ' < "$STATE/conv.json"; }
-conv_err(){ hphp -r '$j=json_decode(stream_get_contents(STDIN),true); echo implode(",", array_keys((array)($j["data"]["errors"] ?? array())));' < "$STATE/conv.json"; }
+# Elementor aggiunge da se' una chiave vuota ("":"") ogni volta che la validazione fallisce: si ignora.
+conv_err(){ hphp -r '$j=json_decode(stream_get_contents(STDIN),true); echo implode(",", array_filter(array_map("strval", array_keys((array)($j["data"]["errors"] ?? array()))), "strlen"));' < "$STATE/conv.json"; }
+# Modulo Contattaci (pagina 251, elemento tmkct015): stesso invio prima e dopo il codice nuovo.
+contact_submit(){
+	curl -s -o "$1" -w '%{http_code}' -d action=elementor_pro_forms_send_form -d post_id=251 -d form_id=tmkct015 -d queried_id=251 \
+		--data-urlencode "form_fields[]=Prova" --data-urlencode "form_fields[]=contatto@staging.invalid" --data-urlencode "form_fields[]=000" \
+		--data-urlencode "form_fields[]=Richiesta generica" --data-urlencode "form_fields[]=Messaggio fittizio di prova" -d "form_fields[]=on" \
+		"$URL/wp-admin/admin-ajax.php"
+}

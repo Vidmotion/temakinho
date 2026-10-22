@@ -15,7 +15,7 @@ acc "sito facoltativo vuoto" "Azienda Due" "" "due@staging.invalid" "1" "Consule
 acc "URL http con percorso" "Azienda Tre" "http://azienda-tre.it/chi-siamo?x=1" "tre@staging.invalid" "2500" "Retail" "Lione|Rimini|Reggio Calabria"
 acc "numero con spazi attorno" "Azienda Quattro" "" "quattro@staging.invalid" " 3 " "Servizi" "Milano"
 SID=$(echo "select max(id) from wp_e_submissions where element_id='$CONV_FORM';" | sql)
-check "valori salvati in Submissions (dipendenti)" " 3 " "$(echo "select value from wp_e_submissions_values where submission_id=$SID and \`key\`='dipendenti';" | sql)"
+check "valori salvati in Submissions (dipendenti, ripulito da Elementor)" "3" "$(echo "select value from wp_e_submissions_values where submission_id=$SID and \`key\`='dipendenti';" | sql)"
 
 section "18. Convenzioni: invii non validi (nessun salvataggio)"
 for v in 0 -5 1.5 abc 1e3 "12,5" "+7" "10000000"; do rej "dipendenti «$v»" dipendenti "Azienda" "" "a@staging.invalid" "$v" "Logistica" "Milano"; done
@@ -36,14 +36,9 @@ B=$(conv_count); conv "Azienda Spam" "" "spam@staging.invalid" "12" "Logistica" 
 check "honeypot: comportamento identico a 1.21.3" "$(cat "$STATE/honeypot-old")" "$(conv_ok) salvati:$(( $(conv_count) - B ))"
 
 section "19. Altri moduli invariati (Contattaci)"
-CURL=$(wp post get 251 --field=url); HTML=$(curl -s "$CURL")
-ids=$(grep -o 'name="form_fields\[[a-z_0-9]*\]' <<<"$HTML" | sed 's/name="form_fields\[//;s/\]//' | sort -u | tr '\n' ' ')
-note "campi del modulo Contattaci: $ids"
-CFORM=$(grep -o 'name="form_id" value="[^"]*"' <<<"$HTML" | head -1 | sed 's/.*value="//;s/"$//')
-cargs=(); for f in $ids; do case $f in *email*) v="contatto@staging.invalid";; *privacy*|*acceptance*) v=on;; *field_*) v="A";; *) v="A";; esac; cargs+=(--data-urlencode "form_fields[$f]=$v"); done
-B=$(echo "select count(*) from wp_e_submissions where element_id='$CFORM';" | sql)
-c=$(curl -s -o "$STATE/contact.json" -w '%{http_code}' -d action=elementor_pro_forms_send_form -d post_id=251 -d "form_id=$CFORM" -d queried_id=251 "${cargs[@]}" "$URL/wp-admin/admin-ajax.php")
-check "Contattaci: invio con valori brevi accettato come prima" "accettato $((B+1))" "$(hphp -r '$j=json_decode(stream_get_contents(STDIN),true); echo !empty($j["success"]) ? "accettato" : "rifiutato";' < "$STATE/contact.json") $(echo "select count(*) from wp_e_submissions where element_id='$CFORM';" | sql)"
+C1=$(contact_submit "$STATE/contact-new.json")
+check "Contattaci: risposta identica a quella con 1.21.3" "$(cat "$STATE/contact-old.code" | cut -d' ' -f1) $(hphp -r 'echo json_encode(json_decode(stream_get_contents(STDIN),true));' < "$STATE/contact-old.json")" "$C1 $(hphp -r 'echo json_encode(json_decode(stream_get_contents(STDIN),true));' < "$STATE/contact-new.json")"
+check "Contattaci: stesso numero di invii salvati di prima" "$(cut -d' ' -f2 "$STATE/contact-old.code")" "$(echo "select count(*) from wp_e_submissions where element_id='tmkct015';" | sql)"
 
 section "20. Notifiche convenzioni (indirizzi segnaposto di staging)"
 docker cp /root/tmk-staging/ops/attiva-notifiche.php "$WPC:/tmp/attiva-notifiche.php" >/dev/null

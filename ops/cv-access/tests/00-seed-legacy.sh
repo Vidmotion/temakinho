@@ -48,5 +48,7 @@ conv "Azienda Prova" "" "prova@staging.invalid" "12" "Logistica" "" >/dev/null; 
 conv "Azienda Prova" "" "prova@staging.invalid" "12" "Logistica" "Napoli" >/dev/null; check "1.21.3: citta' fuori elenco accettata dal server (problema riprodotto)" accettato "$(conv_ok)"
 check "1.21.3: i 4 invii non validi sono stati salvati" "$((B+4))" "$(conv_count)"
 B=$(conv_count); conv "Azienda Spam" "" "spam@staging.invalid" "12" "Logistica" "Milano" "sono-un-bot" >/dev/null; echo "$(conv_ok) salvati:$(( $(conv_count) - B ))" > "$STATE/honeypot-old"
+echo "$(contact_submit "$STATE/contact-old.json") $(echo "select count(*) from wp_e_submissions where element_id='tmkct015';" | sql)" > "$STATE/contact-old.code"
+note "1.21.3: modulo Contattaci → $(hphp -r '$j=json_decode(stream_get_contents(STDIN),true); echo !empty($j["success"]) ? "accettato" : "rifiutato: ".$j["data"]["message"];' < "$STATE/contact-old.json") (comportamento di riferimento)"
 note "1.21.3: honeypot compilato → $(cat "$STATE/honeypot-old" | cut -d' ' -f1) (comportamento di riferimento)"
 summary

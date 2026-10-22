@@ -2,7 +2,7 @@
 /**
  * Accesso riservato alle candidature e ai CV — ruolo "Consultazione CV".
  *
- * Richiesta (Bea, ottobre 2026): un accesso per info@temakinho.com che serva SOLO a vedere le
+ * Richiesta del cliente (ottobre 2026): un accesso per info@temakinho.com che serva SOLO a vedere le
  * candidature e scaricare i CV. Questo file fa esattamente questo:
  *
  *  1. ruolo `tmk_cv_viewer` con le sole capability `read` e `tmk_view_applications`;
