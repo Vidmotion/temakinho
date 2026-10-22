@@ -105,6 +105,11 @@ al primo deploy:
 | `temakinho_uploads` | `wp-content/uploads` | media, CSS generati da Elementor |
 | `temakinho_plugins` | `wp-content/plugins` | plugin di terze parti |
 | `temakinho_themes` | `wp-content/themes` | temi |
+| `temakinho_private` | `/var/www/tmk-private` (fuori dalla webroot) | CV delle candidature e manifesti della migrazione — vedi `ops/cv-access/RUNBOOK.md` |
+
+In produzione la webroot `/var/www/html` è un volume **anonimo** (dichiarato dall'immagine
+ufficiale) che contiene `wp-config.php`, `.htaccess` con le protezioni TMK e `.tmk-auth/`:
+Compose lo riusa a ogni ricreazione del container. Va incluso nei backup come gli altri.
 
 Il plugin `tmk-design-system` **non** dipende dal volume: viene riscritto
 dall'immagine a ogni avvio del container, quindi ogni deploy lo riallinea

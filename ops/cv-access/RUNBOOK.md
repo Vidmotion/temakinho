@@ -76,7 +76,7 @@ la rimozione si riprende rieseguendo il comando.
    `git checkout 10e6649 -- wp-content/plugins/tmk-design-system && git commit`, push su `main`.
 3. A deploy finito, ripetere il passo 1 caricando il file a mano (copre le candidature arrivate fra
    1 e 2):
-   `docker cp cv-storage.php $C:/tmp/` poi
+   `docker cp cv-storage.php $C:/tmp/ && docker exec $C chmod 644 /tmp/cv-storage.php` poi
    `wp eval 'require "/tmp/cv-storage.php"; exit( tmk_cv_store_cli( array( "rollback-prepare" ), array( "yes" => 1 ) ) );'`
 4. Con 1.21.3 i CV tornano scaricabili dai link "Scarica" di Job Applications (e di nuovo pubblici:
    è lo stato precedente).
