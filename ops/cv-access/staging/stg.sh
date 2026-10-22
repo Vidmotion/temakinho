@@ -5,8 +5,10 @@
 #   stg.sh env-init                 genera /root/tmk-staging/env/.env.staging (segreti casuali)
 #   stg.sh checkout <sha>           estrae il commit da /root/tmk-staging/repo.bundle in src/<sha>
 #   stg.sh restore <sha> <backup>   crea i volumi tmkstg_* e vi ripristina il backup, con verifica
+#   stg.sh restore-db <sha> <backup> solo il database (ricreato da zero), con verifica dei conteggi
 #   stg.sh up <sha>                 build dell'immagine DAL COMMIT e avvio
 #   stg.sh stop                     ferma i container (i volumi restano)
+#   stg.sh reset                    elimina container e volumi tmkstg_* (solo staging)
 #   stg.sh wp <args...>             WP-CLI nel container, come www-data
 #   stg.sh sql                      client MySQL dello staging (stdin)
 #
@@ -60,14 +62,26 @@ restore)
     docker run --rm --entrypoint sh -v "$vol":/v -v "$B/plain":/b:ro -v "$B/meta":/m:ro "$IMG" -c \
       "set -e; find /v -mindepth 1 -delete; tar --numeric-owner -xzpf /b/vol-$short.tar.gz -C /v; cd /v && sha256sum -c --quiet /m/files-$short.sha256 && echo '  file verificati:' \$(wc -l < /m/files-$short.sha256)"
   done
+  "$0" restore-db "$sha" "$B";;
+restore-db)
+  sha=${1:?sha}; B=${2:?backup}
   dc "$sha" up -d db
-  for i in $(seq 1 60); do docker exec ${P}-db-1 sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqladmin ping -uroot --silent' 2>/dev/null && break; sleep 2; done
-  echo "import database"
+  # mysqladmin ping risponde "vivo" anche durante l'inizializzazione e anche con password errata:
+  # si aspetta una query vera con la password di root definitiva.
+  ok=0; for i in $(seq 1 90); do
+    if docker exec ${P}-db-1 sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e "select 1" "$MYSQL_DATABASE"' >/dev/null 2>&1; then ok=1; break; fi; sleep 2; done
+  [ "$ok" = 1 ] || die "database di staging non pronto"
+  echo "import database (ricreato da zero)"
+  docker exec ${P}-db-1 sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -e "DROP DATABASE IF EXISTS \`$MYSQL_DATABASE\`; CREATE DATABASE \`$MYSQL_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL ON \`$MYSQL_DATABASE\`.* TO \"$MYSQL_USER\"@\"%\";"'
   gunzip -c "$B/plain/db.sql.gz" | docker exec -i ${P}-db-1 sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot "$MYSQL_DATABASE"'
   docker exec ${P}-db-1 sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N "$MYSQL_DATABASE" -e "select \"posts\",count(*) from wp_posts union all select \"postmeta\",count(*) from wp_postmeta union all select \"options\",count(*) from wp_options union all select \"users\",count(*) from wp_users union all select \"job_application\",count(*) from wp_posts where post_type=\"job_application\" union all select \"e_submissions\",count(*) from wp_e_submissions"' > "$BASE/restore-counts.tsv"
   diff "$B/meta/db-counts.tsv" "$BASE/restore-counts.tsv" && echo "conteggi database identici al backup" || die "conteggi database diversi dal backup";;
 up)
   sha=${1:?sha}; dc "$sha" up -d --build --remove-orphans; dc "$sha" ps;;
+reset)
+  # Elimina SOLO container e volumi del progetto di staging (nomi verificati uno per uno).
+  for c in $(docker ps -a --format '{{.Names}}' | grep -E "^${P}-" || true); do docker rm -f "$c" >/dev/null; echo "rimosso container $c"; done
+  for v in $(docker volume ls --format '{{.Name}}' | grep -E '^tmkstg_' || true); do guard_vol "$v"; docker volume rm "$v" >/dev/null; echo "rimosso volume $v"; done;;
 stop)
   for c in $(docker ps --format '{{.Names}}' | grep -E "^${P}-" || true); do docker stop "$c" >/dev/null; echo "fermato $c"; done;;
 wp)
