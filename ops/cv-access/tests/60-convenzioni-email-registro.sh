@@ -13,7 +13,7 @@ HTTPLOG=/tmp/tmk-staging-http.log
 brevo_seed(){ # tracciamento "marketing automation" attivo con una chiave fittizia (lo staging non esce su Internet)
 	wpe 'update_option( "sib_main_option", array( "ma_key" => "stgfakemakey00000000000000" ) ); $h = (array) get_option( "sib_home_option", array() ); $h["activate_ma"] = "yes"; $h["activate_email"] = "no"; update_option( "sib_home_option", $h );' >/dev/null
 }
-brevo_calls(){ cx "grep -c 'in-automate.brevo.com' $HTTPLOG 2>/dev/null || true"; }
+brevo_calls(){ cx "if [ -f $HTTPLOG ]; then grep -c 'in-automate.brevo.com' $HTTPLOG; else echo 0; fi"; }
 front_as(){ # jar -> HTML della home vista con quella sessione
 	curl -s -b "$1" "$URL/"
 }
@@ -52,8 +52,9 @@ check "azioni: archivio per primo, poi le due email" "save-to-database,email,ema
 
 mp_list(){ curl -s "http://localhost:18025/api/v1/messages?limit=50"; }
 mp_id_to(){ mp_list | hphp -r '$j=json_decode(stream_get_contents(STDIN),true); foreach($j["messages"] as $m){ foreach($m["To"] as $t){ if(strcasecmp($t["Address"],$argv[1])===0 && stripos($m["Subject"],$argv[2])!==false){ echo $m["ID"]; exit; } } }' "$1" "$2"; }
-mp_get(){ curl -s "http://localhost:18025/api/v1/message/$1" | hphp -r '$j=json_decode(stream_get_contents(STDIN),true); $f=$argv[1]; if($f==="From") echo $j["From"]["Address"]; elseif($f==="ReplyTo") echo implode(",",array_map(function($a){return $a["Address"];},$j["ReplyTo"]??[])); elseif($f==="To") echo implode(",",array_map(function($a){return $a["Address"];},$j["To"]??[])); else echo $j[$f]??"";' "$2"; }
-mp_hdr(){ curl -s "http://localhost:18025/api/v1/message/$1/headers" | hphp -r '$j=json_decode(stream_get_contents(STDIN),true); echo implode(" | ", array_keys($j)), "\n", implode("",$j[$argv[1]]??[]);' "$2"; }
+mp_get(){ curl -s "http://localhost:18025/api/v1/message/$2" | hphp -r '$j=json_decode(stream_get_contents(STDIN),true); $f=$argv[1]; if($f==="From") echo $j["From"]["Address"]; elseif($f==="ReplyTo") echo implode(",",array_map(function($a){return $a["Address"];},$j["ReplyTo"]??[])); elseif($f==="To") echo implode(",",array_map(function($a){return $a["Address"];},$j["To"]??[])); else echo $j[$f]??"";' "$1"; }
+mp_hdrs(){ curl -s "http://localhost:18025/api/v1/message/$1/headers" | hphp -r '$j=json_decode(stream_get_contents(STDIN),true); echo implode(" | ", array_keys($j));'; }
+mp_hdr(){ curl -s "http://localhost:18025/api/v1/message/$1/headers" | hphp -r '$j=json_decode(stream_get_contents(STDIN),true); foreach($j as $k=>$v){ if(strcasecmp($k,$argv[1])===0) echo implode("",$v); }' "$2"; }
 mp_clear(){ curl -s -X DELETE http://localhost:18025/api/v1/messages >/dev/null; }
 last_sid(){ echo "select max(id) from wp_e_submissions where element_id='$CONV_FORM';" | sql; }
 sval(){ echo "select value from wp_e_submissions_values where submission_id=$1 and \`key\`='$2';" | sql; }
@@ -82,16 +83,16 @@ T2=$(mp_get Text "$C1")
 contains "conferma: attesta la ricezione senza attivare la convenzione" "non attiva una convenzione" "$T2"
 lacks "conferma: nessun link all'archivio riservato" "wp-admin" "$T2"
 lacks "conferma: nessun Submission ID interno" "%%TMK" "$T2"
-lacks "riepilogo: intestazione interna rimossa" "X-Tmk-Sender" "$(mp_hdr "$I1" Content-Type)"
-lacks "conferma: intestazione interna rimossa" "X-Tmk-Sender" "$(mp_hdr "$C1" Content-Type)"
-contains "formato testo semplice" "text/plain" "$(mp_hdr "$I1" Content-Type | tail -1)"
+lacks "riepilogo: intestazione interna rimossa" "X-Tmk-Sender" "$(mp_hdrs "$I1")"
+lacks "conferma: intestazione interna rimossa" "X-Tmk-Sender" "$(mp_hdrs "$C1")"
+contains "formato testo semplice" "text/plain" "$(mp_hdr "$I1" Content-Type)"
 
 section "25. Le altre email del sito restano col mittente .com"
 mp_clear
 curl -s -o /dev/null -u "$BASIC_USER:$BASIC_PASS" --data-urlencode "user_login=stg-sub" -d "wp-submit=Ottieni+una+nuova+password" "$URL/wp-login.php?action=lostpassword"; sleep 2
 RP=$(mp_list | hphp -r '$j=json_decode(stream_get_contents(STDIN),true); echo $j["messages"][0]["ID"]??"";')
 check "recupero password: mittente invariato" info@temakinho.com "$(mp_get From "$RP")"
-lacks "recupero password: nessuna intestazione interna" "X-Tmk-Sender" "$(mp_hdr "$RP" x)"
+lacks "recupero password: nessuna intestazione interna" "X-Tmk-Sender" "$(mp_hdrs "$RP")"
 mp_clear
 mkpdf cv-conv.pdf "CV fittizio convenzioni"
 apply "$T/files/cv-conv.pdf" Prova Convenzioni candidato@staging.invalid cv.pdf >/dev/null; sleep 2
@@ -102,7 +103,7 @@ GEN=$(mp_id_to qualcuno@staging.invalid "Prova generica")
 check "email generica che chiede il .it senza passare dal modulo: forzata al .com" info@temakinho.com "$(mp_get From "$GEN")"
 wpe 'wp_mail( "qualcuno@staging.invalid", "Prova intestazione", "corpo", array( "X-TMK-Sender: 0123456789abcdef01234567" ) );' >/dev/null; sleep 1
 GH=$(mp_id_to qualcuno@staging.invalid "Prova intestazione")
-check "marcatura inventata da altro codice: rimossa" "" "$(mp_hdr "$GH" X-Tmk-Sender | tail -1)"
+check "marcatura inventata da altro codice: rimossa" "" "$(mp_hdr "$GH" X-Tmk-Sender)"
 check "marcatura inventata da altro codice: mittente resta .com" info@temakinho.com "$(mp_get From "$GH")"
 
 section "26. Convenzioni: limiti per indirizzo"

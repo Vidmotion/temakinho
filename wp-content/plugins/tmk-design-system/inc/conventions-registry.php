@@ -486,8 +486,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 				WP_CLI::success( 'Passaggio eseguito (' . (int) $n . ' tra accodati e sincronizzati).' );
 				return;
 			case 'retry':
+				// Con --id si ricontrolla anche un invio gia' sincronizzato (la riga non viene duplicata).
 				$where = isset( $assoc['id'] ) ? $wpdb->prepare( 'submission_id = %d', (int) $assoc['id'] ) : "status IN ('error','failed')";
-				$n     = $wpdb->query( 'UPDATE ' . tmk_conv_sync_table() . " SET status='pending', attempts=0, next_try='1970-01-01 00:00:00' WHERE $where AND status <> 'done'" ); // phpcs:ignore WordPress.DB.PreparedSQL
+				$n     = $wpdb->query( 'UPDATE ' . tmk_conv_sync_table() . " SET status='pending', attempts=0, next_try='1970-01-01 00:00:00' WHERE $where" ); // phpcs:ignore WordPress.DB.PreparedSQL
 				WP_CLI::success( (int) $n . ' invii rimessi in coda.' );
 				return;
 		}
