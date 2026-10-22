@@ -13,8 +13,10 @@
  * - coda persistente {prefix}tmk_conv_sync: ogni invio salvato entra «pending» e viene spedito in
  *   modo asincrono (wp-cron), con tentativi a intervalli crescenti; un passaggio orario recupera
  *   anche gli invii salvati che non fossero entrati in coda;
- * - senza configurazione non parte nessuna richiesta: gli invii restano in attesa e l'amministratore
- *   vede un avviso. Comandi: `wp tmk-conv-registry status|configure|test|run|retry`.
+ * - senza configurazione (registro aggiornato a mano) non c'e' coda, non parte nessuna richiesta e non
+ *   compare alcun avviso; quando lo si configura, il primo passaggio riprende dall'archivio tutti gli
+ *   invii (cestino escluso) e salta quelli gia' presenti nel registro.
+ *   Comandi: `wp tmk-conv-registry status|configure|test|run|retry`.
  *
  * Configurazione (nessun segreto nel codice): opzione `tmk_conv_registry` scritta con
  * `wp tmk-conv-registry configure`, oppure variabili d'ambiente TMK_CONV_REGISTRY_* che prevalgono.
@@ -99,12 +101,12 @@ add_action( 'tmk_conv_saved', 'tmk_conv_sync_enqueue', 10, 1 );
 function tmk_conv_sync_enqueue( $submission_id ) {
 	global $wpdb;
 	$submission_id = (int) $submission_id;
-	if ( $submission_id <= 0 ) {
-		return;
+	if ( $submission_id <= 0 || ! tmk_conv_sync_configured() ) {
+		return; // registro manuale: nessuna coda (il recupero la ricostruisce quando si configura)
 	}
 	tmk_conv_sync_install();
 	$wpdb->query( $wpdb->prepare( 'INSERT IGNORE INTO ' . tmk_conv_sync_table() . " (submission_id, status, created_at) VALUES (%d, 'pending', %s)", $submission_id, current_time( 'mysql', true ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-	if ( tmk_conv_sync_configured() && ! wp_next_scheduled( 'tmk_conv_sync_run' ) ) {
+	if ( ! wp_next_scheduled( 'tmk_conv_sync_run' ) ) {
 		wp_schedule_single_event( time(), 'tmk_conv_sync_run' );
 		spawn_cron();
 	}
@@ -120,6 +122,9 @@ add_action( 'tmk_conv_sync_sweep', 'tmk_conv_sync_sweep' );
 /** Recupero: ogni invio del modulo salvato in WordPress (escluso il cestino) deve essere in coda. */
 function tmk_conv_sync_sweep() {
 	global $wpdb;
+	if ( ! tmk_conv_sync_configured() ) {
+		return 0;
+	}
 	tmk_conv_sync_install();
 	$ids = "'" . implode( "','", array_map( 'esc_sql', tmk_conv_form_ids() ) ) . "'";
 	$missing = $wpdb->get_col( "SELECT s.id FROM {$wpdb->prefix}e_submissions s LEFT JOIN " . tmk_conv_sync_table() . " q ON q.submission_id = s.id WHERE s.element_id IN ($ids) AND s.status <> 'trash' AND q.submission_id IS NULL ORDER BY s.id" ); // phpcs:ignore WordPress.DB.PreparedSQL
@@ -427,17 +432,12 @@ function tmk_conv_sync_counts() {
 }
 
 add_action( 'admin_notices', function () {
-	if ( ! current_user_can( 'manage_options' ) ) {
+	if ( ! current_user_can( 'manage_options' ) || ! tmk_conv_sync_configured() ) {
 		return;
 	}
-	$n   = tmk_conv_sync_counts();
-	$msg = '';
+	$n = tmk_conv_sync_counts();
 	if ( $n['failed'] ) {
-		$msg = sprintf( 'Registro convenzioni: %d richieste non sono state copiate nel registro dopo %d tentativi. Controllare con «wp tmk-conv-registry status» e riprovare con «wp tmk-conv-registry retry».', $n['failed'], TMK_CONV_SYNC_MAX_ATTEMPTS );
-	} elseif ( ( $n['pending'] + $n['error'] ) && ! tmk_conv_sync_configured() ) {
-		$msg = sprintf( 'Registro convenzioni: sincronizzazione non configurata, %d richieste in attesa (restano nell\'archivio Submissions).', $n['pending'] + $n['error'] );
-	}
-	if ( $msg ) {
+		$msg = sprintf( 'Registro convenzioni: %d richieste non sono state copiate nel registro dopo %d tentativi (restano nell\'archivio Submissions). Controllare con «wp tmk-conv-registry status» e riprovare con «wp tmk-conv-registry retry».', $n['failed'], TMK_CONV_SYNC_MAX_ATTEMPTS );
 		echo '<div class="notice notice-warning"><p>' . esc_html( $msg ) . '</p></div>';
 	}
 } );
@@ -450,7 +450,7 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 		tmk_conv_sync_install();
 		switch ( $cmd ) {
 			case 'status':
-				WP_CLI::log( 'configurazione: ' . ( tmk_conv_sync_configured( $c ) ? 'completa (' . $c['driver'] . ', tabella ' . $c['table'] . ')' : 'assente o incompleta' ) );
+				WP_CLI::log( 'configurazione: ' . ( tmk_conv_sync_configured( $c ) ? 'completa (' . $c['driver'] . ', tabella ' . $c['table'] . ')' : 'assente o incompleta (registro manuale: nessuna coda)' ) );
 				foreach ( tmk_conv_sync_counts() as $k => $v ) {
 					WP_CLI::log( sprintf( '  %-8s %d', $k, $v ) );
 				}

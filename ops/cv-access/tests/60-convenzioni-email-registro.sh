@@ -120,10 +120,14 @@ B=$(conv_count); mp_clear; conv "Azienda" "ftp://x.example" "nonvalido@staging.i
 check "invio non valido: né salvataggio né email" "rifiutato $B 0" "$(conv_ok) $(conv_count) $(mailpit_count)"
 wpe 'global $wpdb; $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE \"_transient%tmk_conv_rl_%\"");' >/dev/null
 
-section "27. Registro: in coda finché non è configurato"
-check "invii validi in coda come pending" "$(echo "select count(*) from wp_e_submissions where element_id='$CONV_FORM' and status<>'trash' and id>=$S1;" | sql)" "$(echo "select count(*) from wp_tmk_conv_sync where status='pending';" | sql)"
-contains "status: configurazione assente" "assente o incompleta" "$(wp tmk-conv-registry status)"
+section "27. Registro manuale (non configurato): nessuna coda, nessun avviso"
+check "nessuna riga in coda senza configurazione" 0 "$(echo "select count(*) from wp_tmk_conv_sync;" | sql)"
+contains "status: registro manuale" "registro manuale" "$(wp tmk-conv-registry status)"
 contains "nessuna richiesta esterna senza configurazione" "0" "$(cx "grep -c graph $HTTPLOG 2>/dev/null || echo 0")"
+check "passaggio orario senza configurazione: nessuna coda" 0 "$(wp tmk-conv-registry run >/dev/null; echo "select count(*) from wp_tmk_conv_sync;" | sql)"
+DASH=$(curl -s -u "$BASIC_USER:$BASIC_PASS" -b "$STATE/jar-adm" -w '\n%{http_code}' "$URL/wp-admin/index.php")
+check "bacheca amministratore caricata" 200 "$(tail -1 <<<"$DASH")"
+lacks "bacheca amministratore: nessun avviso del registro" "Registro convenzioni" "$DASH"
 
 section "28. Registro: Microsoft Graph simulato"
 docker cp /root/tmk-staging/ops/mock-graph.php "$WPC:/tmp/mock-graph.php" >/dev/null
@@ -136,9 +140,9 @@ echo -n "mock-secret" | docker exec -i -u www-data "$WPC" php /tmp/wp-cli.phar -
 contains "configurazione completa" "completa (msgraph" "$(wp tmk-conv-registry status)"
 contains "test di connessione senza scritture" "nessuna scrittura" "$(wp tmk-conv-registry test)"
 check "il test non ha scritto nulla" 0 "$(cx 'grep -cE "^(POST|PATCH) /v1" /tmp/mockgraph/requests.log || true')"
-N=$(echo "select count(*) from wp_tmk_conv_sync where status='pending';" | sql)
+N=$(echo "select count(*) from wp_e_submissions where element_id='$CONV_FORM' and status<>'trash';" | sql)
 wp tmk-conv-registry run >/dev/null
-check "tutti gli invii in coda sincronizzati" "$N 0" "$(echo "select count(*) from wp_tmk_conv_sync where status='done';" | sql) $(echo "select count(*) from wp_tmk_conv_sync where status<>'done';" | sql)"
+check "configurato: il primo passaggio recupera e sincronizza tutti gli invii dell'archivio" "$N 0" "$(echo "select count(*) from wp_tmk_conv_sync where status='done';" | sql) $(echo "select count(*) from wp_tmk_conv_sync where status<>'done';" | sql)"
 check "righe nel registro = invii (la riga vuota iniziale è stata usata)" "$N" "$(MCOUNT)"
 check "prima riga: Submission ID numerico" "$S1" "$(MCELL 0 0)"
 check "prima riga: ID richiesta" "$REQ" "$(MCELL 0 1)"
