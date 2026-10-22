@@ -1,0 +1,63 @@
+# ==========================================================================
+# Staging ISOLATO di Temakinho — override del docker-compose.yml del commit
+# in prova. Uso (dal server, vedi stg.sh):
+#   docker compose -p tmkstg --env-file /root/tmk-staging/env/.env.staging \
+#     -f <checkout del commit>/docker-compose.yml -f override.yml up -d --build
+#
+# Cosa cambia rispetto alla produzione, e solo questo:
+#  - progetto `tmkstg`: volumi, rete e container hanno nomi propri, nessuna
+#    risorsa condivisa con `temakinho-agyavu`;
+#  - `dokploy-network` NON e' la rete di Traefik: qui e' una rete interna di
+#    staging. Entrambe le reti di WordPress sono `internal: true`, quindi
+#    WordPress e il database non hanno alcuna uscita verso Internet (niente
+#    Brevo, niente email reali, niente licenze);
+#  - la webroot e' un volume nominato (in produzione e' anonimo), cosi' il
+#    ripristino del backup e' esplicito;
+#  - posta intercettata da Mailpit; un proxy espone il sito SOLO su
+#    127.0.0.1:18080 (Mailpit su 127.0.0.1:18025), raggiungibile da fuori
+#    solo con un tunnel SSH;
+#  - mu-plugin di staging: posta verso Mailpit, nessuna richiesta HTTP
+#    esterna, niente cron, noindex, punti di interruzione per le prove.
+# ==========================================================================
+services:
+  wordpress:
+    volumes:
+      - webroot:/var/www/html
+      - /root/tmk-staging/mu/tmk-staging.php:/var/www/html/wp-content/mu-plugins/tmk-staging.php:ro
+
+  db:
+    healthcheck:
+      start_period: 90s
+
+  mailpit:
+    image: axllent/mailpit:v1.27.10
+    restart: unless-stopped
+    networks:
+      - internal
+
+  proxy:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - wordpress
+      - mailpit
+    ports:
+      - "127.0.0.1:18080:80"
+      - "127.0.0.1:18025:8025"
+    volumes:
+      - /root/tmk-staging/proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - dokploy-network
+      - internal
+      - egress
+
+networks:
+  internal: !override
+    internal: true
+  dokploy-network: !override
+    name: tmkstg_edge
+    internal: true
+  egress: {}
+
+volumes:
+  webroot:
