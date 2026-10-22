@@ -49,6 +49,9 @@ add_filter( 'pre_http_request', function ( $pre, $args, $url ) {
 	if ( in_array( $host, array( 'localhost', '127.0.0.1', 'wordpress', 'mailpit' ), true ) ) {
 		return $pre;
 	}
+	// Registro delle richieste bloccate (host e percorso, senza query) per le prove: per esempio
+	// l'identificazione Brevo al login deve NON comparire qui.
+	@file_put_contents( '/tmp/tmk-staging-http.log', gmdate( 'c' ) . ' ' . strtoupper( (string) ( $args['method'] ?? 'GET' ) ) . ' ' . $host . (string) wp_parse_url( $url, PHP_URL_PATH ) . "\n", FILE_APPEND );
 	return new WP_Error( 'tmk_staging_offline', 'Staging: richieste esterne disattivate (' . $host . ')' );
 }, 1, 3 );
 

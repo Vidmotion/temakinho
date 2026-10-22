@@ -2,14 +2,14 @@
 /**
  * Plugin Name: TMK Design System
  * Description: The single implementation layer for the Temakinho site — design tokens, base styles, utilities, shared components, and layout regions, all verbatim from the approved Claude Design system, enqueued in one enforced layer order (tokens -> base -> utilities -> animations -> components -> layout -> pages; see inc/enqueue.php) and mirrored into Elementor's Global Colors/Fonts. Source of truth: TMK/10_DESIGN_SYSTEM_SPECIFICATION.md. Never hand-edit token values here — update via the Claude Design project and re-sync.
- * Version: 1.22.0
+ * Version: 1.23.0
  * Author: TMK Technical Lead
  * Text Domain: tmk-design-system
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'TMK_DS_VERSION', '1.22.0' );
+define( 'TMK_DS_VERSION', '1.23.0' );
 // Production booking + ordering destinations. Used as the governed fallback for every Prenota
 // action that has no per-instance destination yet, so CTAs point at the real system instead of the
 // /#prenota placeholder.
@@ -100,8 +100,12 @@ require_once TMK_DS_PATH . 'inc/event-blocks.php';
 require_once TMK_DS_PATH . 'inc/careers-render.php';
 // Candidature riservate: archivio CV fuori dalla webroot, ruolo "Consultazione CV", download protetto.
 require_once TMK_DS_PATH . 'inc/cv-access.php';
-// Convenzioni aziendali: validazione lato server del modulo Elementor (solo quel modulo).
+// Convenzioni aziendali: validazione lato server del modulo Elementor (solo quel modulo), ID richiesta
+// e mittente .it delle sue notifiche, limiti anti-abuso; copia automatica nel registro condiviso.
 require_once TMK_DS_PATH . 'inc/conventions-form.php';
+require_once TMK_DS_PATH . 'inc/conventions-registry.php';
+// Plugin Brevo: nessuna identificazione degli account WordPress (login, pagine viste da collegati).
+require_once TMK_DS_PATH . 'inc/brevo-login-tracking.php';
 // PATCH 1 (D-29): /lavora-con-noi/ + /lavora-con-noi/{slug}/ moved to Elementor.
 // require_once TMK_DS_PATH . 'inc/careers-routing.php';
 
