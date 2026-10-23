@@ -6,8 +6,11 @@ set -uo pipefail
 T=/root/tmk-staging/tests; NEW=${1:?sha nuovo}; B=${2:?backup}; OLD=${3:-25dd8aa}
 export LOG=$T/results-conv.log
 rm -f "$LOG" "$T/state/counters"
-OLD=$(git -C /root/tmk-staging/src/"$(ls /root/tmk-staging/src | head -1)" rev-parse "$OLD" 2>/dev/null || echo "$OLD")
-/root/tmk-staging/stg.sh checkout "$OLD" >/dev/null; /root/tmk-staging/stg.sh checkout "$NEW" >/dev/null
+# SHA completo del commit di produzione, risolto nel checkout del commit nuovo (che ne contiene la
+# storia). --verify -q: in caso di errore non stampa nulla (rev-parse semplice ristampa l'argomento).
+/root/tmk-staging/stg.sh checkout "$NEW" >/dev/null
+OLD=$(git -C /root/tmk-staging/src/"$NEW" rev-parse --verify -q "$OLD^{commit}" || echo "$OLD")
+/root/tmk-staging/stg.sh checkout "$OLD" >/dev/null
 bash "$T/setup.sh" "$OLD" "$B" > "$T/setup-conv.log" 2>&1 || { echo "setup fallito"; tail -20 "$T/setup-conv.log"; exit 1; }
 { echo "Prove 1.23.0 sullo staging isolato tmkstg — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "Commit in prova: $NEW (produzione: $OLD). Backup ripristinato: $B"

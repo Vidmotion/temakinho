@@ -172,17 +172,18 @@ function tmk_conv_validate( $record, $ajax_handler ) {
  * - Dopo il salvataggio in Submissions (prima azione del modulo, priorita' 0 in Elementor) se ne
  *   ricava il Submission ID, che le email ricevono al posto di %%TMK_SUBMISSION_ID%% e
  *   %%TMK_SUBMISSION_URL%% (link diretto all'invio nell'archivio riservato).
- * - Mittente: WP Mail SMTP forza info@temakinho.com su ogni email del sito. Solo le due email di
- *   questo modulo partono da tmk_conv_sender() (info@temakinho.it): il modulo le marca con
- *   un'intestazione interna che viene tolta all'ultimo momento, quando il From viene sostituito.
- *   Candidature, recupero password e tutte le altre email restano invariate.
+ * - Mittente: le due email di questo modulo partono da tmk_conv_sender() (info@temakinho.com,
+ *   dominio autenticato in Brevo; 1.23.2: non piu' il .it). Oggi coincide con il mittente che WP
+ *   Mail SMTP forza su ogni email del sito; il modulo lo fissa comunque per conto suo, marcando le
+ *   sue email con un'intestazione interna che viene tolta all'ultimo momento, quando il From viene
+ *   applicato. Candidature, recupero password e tutte le altre email non passano di qui.
  * - La conferma va all'indirizzo scritto nel modulo, quindi limita quante email un estraneo puo'
  *   far partire verso uno stesso indirizzo (o in tutto) prima di qualunque salvataggio.
  * ---------------------------------------------------------------------------------------------- */
 
 /** Mittente delle email del modulo convenzioni (dominio autenticato in Brevo). */
 function tmk_conv_sender() {
-	$s = (string) apply_filters( 'tmk_conv_sender_email', 'info@temakinho.it' );
+	$s = (string) apply_filters( 'tmk_conv_sender_email', 'info@temakinho.com' );
 	return is_email( $s ) ? $s : '';
 }
 
@@ -291,7 +292,7 @@ function tmk_conv_new_record( $record, $ajax_handler ) {
 	tmk_conv_state( array() );
 }
 
-/** Segnaposto del Submission ID nelle email + mittente .it marcato per wp_mail. */
+/** Segnaposto del Submission ID nelle email + mittente del modulo marcato per wp_mail. */
 add_filter( 'elementor_pro/forms/wp_mail_fields', 'tmk_conv_mail_fields', 10, 2 );
 function tmk_conv_mail_fields( $fields, $record ) {
 	if ( ! tmk_conv_is_form( $record ) ) {

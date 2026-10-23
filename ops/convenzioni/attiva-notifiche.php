@@ -3,13 +3,14 @@
  * Convenzioni aziendali — attivazione delle due notifiche del modulo Elementor (pagina 21226,
  * elemento 9fc0788): riepilogo interno + conferma all'azienda.
  *
- *   TMK_CONV_TO=info@temakinho.it TMK_CONV_REPLY_TO=info@temakinho.it \
+ *   TMK_CONV_TO=info@temakinho.com TMK_CONV_REPLY_TO=info@temakinho.com \
  *     wp --user=1 eval-file attiva-notifiche.php [dry-run]
  *
- * Valori confermati da Temakinho il 22/10/2026: destinatario interno, mittente e Reply-To della
- * conferma = info@temakinho.it (dominio .it, NON .com); Reply-To del riepilogo interno = email del
- * referente validata dal modulo (campo «email»). Il mittente .it viene applicato solo a queste due
- * email da inc/conventions-form.php (tmk_conv_sender), le altre email del sito non cambiano.
+ * Valori confermati da Temakinho il 23/10/2026 (correzione definitiva del 22/10, che indicava il
+ * .it): destinatario interno, mittente di entrambe le email e Reply-To della conferma =
+ * info@temakinho.com (dominio autenticato in Brevo); Reply-To del riepilogo interno = email del
+ * referente validata dal modulo (campo «email»). Il mittente e' fissato anche da
+ * inc/conventions-form.php (tmk_conv_sender) solo per queste due email.
  *
  * Cambia solo: submit_actions (+email, +email2) e le impostazioni email_* / email_*_2 del modulo.
  * Campi, validazione, messaggi a schermo e «salva nel database» (sempre per primo) restano come
@@ -21,7 +22,7 @@ $post_id = (int) ( getenv( 'TMK_CONV_POST' ) ?: 21226 );
 $form_id = (string) ( getenv( 'TMK_CONV_FORM' ) ?: '9fc0788' );
 $to      = trim( (string) getenv( 'TMK_CONV_TO' ) );
 $reply   = trim( (string) getenv( 'TMK_CONV_REPLY_TO' ) );
-$from    = trim( (string) ( getenv( 'TMK_CONV_FROM' ) ?: 'info@temakinho.it' ) );
+$from    = trim( (string) ( getenv( 'TMK_CONV_FROM' ) ?: 'info@temakinho.com' ) );
 $disable = (bool) getenv( 'TMK_CONV_DISABLE' );
 $dry     = in_array( 'dry-run', (array) ( $args ?? array() ), true );
 if ( ! $disable && ( ! is_email( $to ) || ! is_email( $reply ) || ! is_email( $from ) ) ) {
