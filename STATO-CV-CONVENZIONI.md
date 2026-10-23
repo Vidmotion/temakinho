@@ -4,7 +4,27 @@ Nota breve per riprendere il lavoro dopo una pausa. Niente segreti, niente dati 
 Procedure: `ops/cv-access/RUNBOOK.md`. Prove: `ops/cv-access/tests/` (staging) e
 `ops/cv-access/prod-viewer-session-test.sh` (produzione, senza toccare la password dell'account).
 
+## 23/10/2026 — 1.23.2: convenzioni su info@temakinho.com, notifiche attive
+
+Correzione definitiva di Temakinho: l'indirizzo è **info@temakinho.com**, non il `.it`. Ogni
+attività per autenticare `temakinho.it` è interrotta (nessun DNS da aggiungere).
+
+| Voce | Stato |
+|---|---|
+| Codice | 1.23.2: PR #5, merge `d8f5ae9`, deploy 09:39 UTC; `tmk_conv_sender()` = info@temakinho.com |
+| Prove staging | 87/87 sul commit `4a81bbe`, da zero (backup `20261022T143813Z-pre-convenzioni` → 1.22.0 → 1.23.2) |
+| Backup | `20261023T093343Z-pre-1.23.2` (cifrato age, copia sul Mac, decifratura di database e archivio CV verificata) |
+| Brevo / DNS | `temakinho.com` autenticato: `brevo-code`, `brevo1/brevo2._domainkey`, `_dmarc` tutti `status: true`, e presenti nei DNS pubblici; SPF con `include:spf.brevo.com`. Nessun record toccato. Il dominio `temakinho.it` resta in Brevo non autenticato e inutilizzato (eliminabile) |
+| Notifiche | **attive** dal 23/10 09:40 UTC: riepilogo a info@temakinho.com (Reply-To = email del referente), conferma all'azienda (Reply-To info@temakinho.com), mittente info@temakinho.com per entrambe. Copia di `_elementor_data` precedente in `/root/tmk-ops/secrets/` |
+| Prova in produzione | browser reale sulla pagina pubblica, referente info@temakinho.com: salvata come Submission **#16** (ID richiesta generato dal server), azioni email/email2 «success», Brevo: entrambe `requests` → **`delivered`**, mittente info@temakinho.com. Invio #16 lasciato in archivio per aprire il link del riepilogo; si rimuove con `TMK_CONV_SID=16 … prova-invio.php elimina` |
+| Account CV | prova di produzione 48/48 dopo il deploy; password non toccata (impronta dell'hash invariata) |
+| Registro | resta **manuale** (procedura aggiornata in `ops/convenzioni/README.md`) |
+| Privacy | bozza v1.1 (indirizzo .com, registro manuale): `Privacy_convenzioni_testo_da_approvare_v1.1.md` nella cartella outputs Codex. **Non approvata** |
+| Chiave Brevo esposta | **ancora in uso** (impronta `cf585de054`): serve una chiave nuova creata dall'interfaccia Brevo. Procedura pronta, la chiave passa dagli appunti senza essere stampata: `ops/brevo/carica-nuova-chiave.sh verifica` → `applica` (email di prova a info@ con esito Brevo) → revoca in Brevo → `revoca-ok` |
+
 ## 22/10/2026 pomeriggio — 1.23.0 / 1.23.1 (convenzioni, email, registro, Brevo)
+
+Nota: le indicazioni `.it` di questa sezione sono superate dalla correzione del 23/10.
 
 | Voce | Stato |
 |---|---|
