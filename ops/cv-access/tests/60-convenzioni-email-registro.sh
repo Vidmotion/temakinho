@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Prove 1.23.0 sullo staging isolato: tracciamento Brevo al login, notifiche convenzioni (mittente .it
-# solo per quel modulo), limiti, ID lato server, sincronizzazione del registro con Graph simulato.
+# Prove 1.23.x sullo staging isolato: tracciamento Brevo al login, notifiche convenzioni (mittente
+# info@temakinho.com fissato dal modulo), limiti, ID lato server, sincronizzazione del registro con Graph simulato.
 # Uso: 60-convenzioni-email-registro.sh old   (con il codice 1.22.0 avviato: verifica che la prova
 #                                              rilevi davvero l'identificazione Brevo)
 #      60-convenzioni-email-registro.sh new   (con il codice nuovo)
@@ -45,7 +45,7 @@ wpe 'update_option( "sib_main_option", array() );' >/dev/null
 
 section "23. Convenzioni: attivazione notifiche con gli indirizzi confermati"
 docker cp /root/tmk-staging/ops/attiva-notifiche.php "$WPC:/tmp/attiva-notifiche.php" >/dev/null
-ACT(){ docker exec -u www-data -e TMK_CONV_TO=info@temakinho.it -e TMK_CONV_REPLY_TO=info@temakinho.it "$WPC" php /tmp/wp-cli.phar --path=/var/www/html --user=stg-admin eval-file /tmp/attiva-notifiche.php "$@" 2>&1; }
+ACT(){ docker exec -u www-data -e TMK_CONV_TO=info@temakinho.com -e TMK_CONV_REPLY_TO=info@temakinho.com "$WPC" php /tmp/wp-cli.phar --path=/var/www/html --user=stg-admin eval-file /tmp/attiva-notifiche.php "$@" 2>&1; }
 contains "attivazione" "Notifiche attivate" "$(ACT)"
 contains "seconda esecuzione: nessuna modifica" "Nessuna modifica" "$(ACT)"
 check "azioni: archivio per primo, poi le due email" "save-to-database,email,email2" "$(wpe '$d=json_decode(get_post_meta(21226,"_elementor_data",true),true); $f=null; $w=function($e)use(&$w,&$f){foreach($e as $x){if(($x["id"]??"")==="9fc0788")$f=$x; if(!empty($x["elements"]))$w($x["elements"]);}}; $w($d); echo implode(",",$f["settings"]["submit_actions"]);')"
@@ -66,9 +66,9 @@ check "accettato" accettato "$(conv_ok)"
 S1=$(last_sid); REQ=$(sval "$S1" id_richiesta)
 check "ID richiesta generato dal server (non quello del browser)" 1 "$(grep -Ec '^CONV-[0-9]{8}-[0-9A-F]{8}$' <<<"$REQ")"
 check "due email intercettate" 2 "$(mailpit_count)"
-I1=$(mp_id_to info@temakinho.it "n. $S1"); C1=$(mp_id_to referente@staging.invalid "ricevuta")
-check_ne "riepilogo interno a info@temakinho.it con il Submission ID nell'oggetto" "" "$I1"
-check "riepilogo: mittente .it" info@temakinho.it "$(mp_get From "$I1")"
+I1=$(mp_id_to info@temakinho.com "n. $S1"); C1=$(mp_id_to referente@staging.invalid "ricevuta")
+check_ne "riepilogo interno a info@temakinho.com con il Submission ID nell'oggetto" "" "$I1"
+check "riepilogo: mittente info@temakinho.com" info@temakinho.com "$(mp_get From "$I1")"
 check "riepilogo: Reply-To = email del referente" referente@staging.invalid "$(mp_get ReplyTo "$I1")"
 TXT=$(mp_get Text "$I1")
 contains "riepilogo: Submission ID nel testo" "Submission ID (archivio WordPress): $S1" "$TXT"
@@ -77,8 +77,8 @@ contains "riepilogo: ID richiesta uguale a quello salvato" "ID richiesta: $REQ" 
 contains "riepilogo: città" "Città di interesse: Milano, Roma" "$TXT"
 contains "riepilogo: stato Da valutare" "Da valutare" "$TXT"
 check_ne "conferma all'indirizzo inserito dall'azienda" "" "$C1"
-check "conferma: mittente .it" info@temakinho.it "$(mp_get From "$C1")"
-check "conferma: Reply-To info@temakinho.it" info@temakinho.it "$(mp_get ReplyTo "$C1")"
+check "conferma: mittente info@temakinho.com" info@temakinho.com "$(mp_get From "$C1")"
+check "conferma: Reply-To info@temakinho.com" info@temakinho.com "$(mp_get ReplyTo "$C1")"
 TXT2=$(mp_get Text "$C1")
 contains "conferma: attesta la ricezione senza attivare la convenzione" "non attiva una convenzione" "$TXT2"
 lacks "conferma: nessun link all'archivio riservato" "wp-admin" "$TXT2"
@@ -87,7 +87,7 @@ lacks "riepilogo: intestazione interna rimossa" "X-Tmk-Sender" "$(mp_hdrs "$I1")
 lacks "conferma: intestazione interna rimossa" "X-Tmk-Sender" "$(mp_hdrs "$C1")"
 contains "formato testo semplice" "text/plain" "$(mp_hdr "$I1" Content-Type)"
 
-section "25. Le altre email del sito restano col mittente .com"
+section "25. Le altre email del sito: mittente invariato, nessuna marcatura"
 mp_clear
 curl -s -o /dev/null -u "$BASIC_USER:$BASIC_PASS" --data-urlencode "user_login=stg-sub" -d "wp-submit=Ottieni+una+nuova+password" "$URL/wp-login.php?action=lostpassword"; sleep 2
 RP=$(mp_list | hphp -r '$j=json_decode(stream_get_contents(STDIN),true); echo $j["messages"][0]["ID"]??"";')
@@ -98,9 +98,9 @@ mkpdf cv-conv.pdf "CV fittizio convenzioni"
 apply "$T/files/cv-conv.pdf" Prova Convenzioni candidato@staging.invalid cv.pdf >/dev/null; sleep 2
 NA=$(mp_list | hphp -r '$j=json_decode(stream_get_contents(STDIN),true); echo $j["messages"][0]["ID"]??"";')
 check "notifica candidatura: mittente invariato" info@temakinho.com "$(mp_get From "$NA")"
-wpe 'wp_mail( "qualcuno@staging.invalid", "Prova generica", "corpo", array( "From: Altro <info@temakinho.it>" ) );' >/dev/null; sleep 1
+wpe 'wp_mail( "qualcuno@staging.invalid", "Prova generica", "corpo", array( "From: Altro <altro@staging.invalid>" ) );' >/dev/null; sleep 1
 GEN=$(mp_id_to qualcuno@staging.invalid "Prova generica")
-check "email generica che chiede il .it senza passare dal modulo: forzata al .com" info@temakinho.com "$(mp_get From "$GEN")"
+check "email generica che chiede un altro mittente senza passare dal modulo: forzata al .com" info@temakinho.com "$(mp_get From "$GEN")"
 wpe 'wp_mail( "qualcuno@staging.invalid", "Prova intestazione", "corpo", array( "X-TMK-Sender: 0123456789abcdef01234567" ) );' >/dev/null; sleep 1
 GH=$(mp_id_to qualcuno@staging.invalid "Prova intestazione")
 check "marcatura inventata da altro codice: rimossa" "" "$(mp_hdr "$GH" X-Tmk-Sender)"

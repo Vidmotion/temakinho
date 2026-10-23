@@ -8,23 +8,25 @@ WP-CLI in produzione: `/root/tmk-ops/wp.sh …` (vedi `ops/cv-access/RUNBOOK.md`
 
 ## 1. Notifiche email
 
-Prerequisito: il mittente `info@temakinho.it` deve essere valido in Brevo (dominio `temakinho.it`
-autenticato). Controllo: `brevo.sh GET /v3/senders/domains/temakinho.it` → `"authenticated": true`.
-Record richiesti da Brevo (zona DNS di temakinho.it su register.it):
+| | |
+|---|---|
+| Riepilogo interno | a `info@temakinho.com`, mittente `info@temakinho.com`, Reply-To = email del referente (campo `email` del modulo) |
+| Conferma all'azienda | all'email del referente, mittente `info@temakinho.com`, Reply-To `info@temakinho.com` |
 
-| Tipo | Nome | Valore |
-|---|---|---|
-| TXT | `temakinho.it` (@) | `brevo-code:387c4c6d599ce6488ab26b135ad0f38a` |
-| CNAME | `brevo1._domainkey` | `b1.temakinho-it.dkim.brevo.com` |
-| CNAME | `brevo2._domainkey` | `b2.temakinho-it.dkim.brevo.com` |
-| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` |
+Indirizzi confermati da Temakinho il 23/10/2026 (`info@temakinho.com`; il `.it` indicato il 22/10 è
+stato corretto e non va usato). Il mittente del modulo è fissato anche nel codice
+(`tmk_conv_sender()`, filtro `tmk_conv_sender_email`).
 
-Il TXT `brevo-code` si aggiunge accanto a quelli esistenti (SPF compreso), senza sostituirli.
+Prerequisito: dominio `temakinho.com` autenticato in Brevo. Controllo:
+`brevo.sh GET /v3/senders/domains/temakinho.com` → `"authenticated": true` e `status: true` sui
+quattro record (verificato il 23/10/2026). I record esistono già nella zona DNS di `temakinho.com`
+(`brevo-code` TXT, `brevo1._domainkey` / `brevo2._domainkey` CNAME, `_dmarc` TXT; SPF con
+`include:spf.brevo.com`): **non** vanno aggiunti né modificati.
 
 Attivazione (idempotente, copia di sicurezza di `_elementor_data`):
 
 ```bash
-TMK_CONV_TO=info@temakinho.it TMK_CONV_REPLY_TO=info@temakinho.it \
+TMK_CONV_TO=info@temakinho.com TMK_CONV_REPLY_TO=info@temakinho.com \
   wp --user=1 eval-file attiva-notifiche.php [dry-run]
 ```
 
@@ -34,10 +36,13 @@ Attenzione: l'API di Brevo risponde 201 anche quando poi rifiuta il mittente; l'
 nell'evento transazionale (`/v3/smtp/statistics/events`): `requests` = accettata,
 `delivered` = consegnata, `opened` = aperta, `error`/`blocked`/`hardBounce` = non consegnata.
 
-## 2. Registro condiviso automatico
+## 2. Registro condiviso (oggi manuale)
 
-Ogni invio salvato entra nella coda `wp_tmk_conv_sync` (chiave Submission ID). Senza configurazione
-resta lì; l'amministratore vede un avviso. Configurazione (Microsoft 365 / Excel Online):
+Per scelta di Carlo il registro resta **manuale**: il team lo compila a partire da Elementor ›
+Submissions o dal riepilogo interno. Finché il connettore non è configurato il sito non crea code,
+non mostra avvisi e non invia dati al registro (1.23.1). Se in futuro si attiva la copia automatica,
+il primo passaggio recupera tutto l'archivio senza duplicati (chiave Submission ID). Configurazione
+(Microsoft 365 / Excel Online):
 
 1. Nel tenant Microsoft 365 di Temakinho: registrazione di un'app (Entra ID) con permesso
    applicativo **Sites.Selected** (concesso dall'amministratore del tenant solo sul sito che contiene
@@ -65,5 +70,6 @@ vengono mai scritte. Testo che inizia con `= + - @` viene scritto come testo.
 ## 3. Pulizia dei dati di prova
 
 `pulizia-dati-prova.php` (elenco chiuso di ID verificati il 22/10/2026): eseguito il 22/10/2026.
-Per nuove prove in produzione usare `info@temakinho.it` come referente e un nome azienda che inizi
-con «TEST», e rimuoverle dall'archivio Submissions a prova finita (ID annotati).
+Per nuove prove in produzione usare `info@temakinho.com` come referente (unico destinatario ammesso
+per le prove) e un nome azienda che inizi con «TEST», e rimuoverle dall'archivio Submissions a prova
+finita (ID annotati).
