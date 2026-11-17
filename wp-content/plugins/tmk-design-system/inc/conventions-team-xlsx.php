@@ -21,7 +21,7 @@ function tmk_conv_team_xlsx( $fields, $rows ) {
 			'xl/_rels/workbook.xml.rels' => $rels . 'Type="' . $rel_ns . '/worksheet" Target="worksheets/sheet1.xml"/></Relationships>',
 			'xl/workbook.xml' => '<workbook xmlns="' . $sheet_ns . '" xmlns:r="' . $rel_ns . '"><sheets><sheet name="Convenzioni" sheetId="1" r:id="rId1"/></sheets></workbook>',
 		);
-		$xml = '<worksheet xmlns="' . $sheet_ns . '"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="9" width="26" customWidth="1"/></cols><sheetData>';
+		$xml = '<worksheet xmlns="' . $sheet_ns . '"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="' . count( $fields ) . '" width="26" customWidth="1"/></cols><sheetData>';
 		array_unshift( $rows, $fields );
 		foreach ( $rows as $i => $row ) {
 			$n = $i + 1;
@@ -33,7 +33,7 @@ function tmk_conv_team_xlsx( $fields, $rows ) {
 			}
 			$xml .= '</row>';
 		}
-		$parts['xl/worksheets/sheet1.xml'] = $xml . '</sheetData><autoFilter ref="A1:I' . count( $rows ) . '"/></worksheet>';
+		$parts['xl/worksheets/sheet1.xml'] = $xml . '</sheetData><autoFilter ref="A1:' . chr( 64 + count( $fields ) ) . count( $rows ) . '"/></worksheet>';
 		foreach ( $parts as $name => $content ) {
 			if ( ! $zip->addFromString( $name, $content ) ) {
 				throw new RuntimeException();
