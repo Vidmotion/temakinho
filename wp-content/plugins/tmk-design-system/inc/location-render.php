@@ -89,11 +89,22 @@ function tmk_location_hours_rows( $hours ) {
 
 /** A small, deterministic on-brand selection of real dishes for a Location's Menu preview. */
 function tmk_location_menu_selection( $limit = 6 ) {
-	$base = array( 'post_type' => 'menu_item', 'post_status' => 'publish', 'posts_per_page' => (int) $limit, 'orderby' => 'title', 'order' => 'ASC' );
+	$base = array(
+		'post_type'	  => 'menu_item',
+		'post_status'	=> 'publish',
+		'posts_per_page' => (int) $limit,
+		'orderby'		=> 'title',
+		'order'		  => 'ASC',
+	);
 	$with_price = array( 'key' => 'price', 'value' => '', 'compare' => '!=' );
 	// Piatti scelti da TMK con l'etichetta "Anteprima nelle schede ristorante" (chiave 'preview').
-	$picked = get_posts( $base + array( 'meta_query' => array( array( 'key' => 'labels', 'value' => 'preview', 'compare' => 'LIKE' ), $with_price ) ) );
-	if ( $picked ) { return $picked; }
+	$picked = get_posts( $base + array( 'meta_query' => array(
+		array( 'key' => 'labels', 'value' => 'preview', 'compare' => 'LIKE' ),
+		$with_price,
+	) ) );
+	if ( $picked ) {
+		return $picked;
+	}
 	// Nessun piatto etichettato: stesso comportamento di prima.
 	return get_posts( $base + array( 'meta_query' => array( $with_price ) ) );
 }
