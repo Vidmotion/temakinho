@@ -35,7 +35,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 /** Sitewide, byte-identical across all 14 Locations (archive "Menu block" paragraph) — stored once
  *  here, never as per-restaurant postmeta. */
 if ( ! defined( 'TMK_LOCATION_MENU_INTRO' ) ) {
-	define( 'TMK_LOCATION_MENU_INTRO', 'Ogni tavola ha il suo menu: quello che stai per sfogliare vive solo qui, nel ristorante. Per delivery e asporto, l’esperienza cambia — e anche i piatti.' );
+	define( 'TMK_LOCATION_MENU_INTRO', '' );
 }
 
 /**
@@ -89,14 +89,24 @@ function tmk_location_hours_rows( $hours ) {
 
 /** A small, deterministic on-brand selection of real dishes for a Location's Menu preview. */
 function tmk_location_menu_selection( $limit = 6 ) {
-	return get_posts( array(
-		'post_type'      => 'menu_item',
-		'post_status'    => 'publish',
+	$base = array(
+		'post_type'	  => 'menu_item',
+		'post_status'	=> 'publish',
 		'posts_per_page' => (int) $limit,
-		'orderby'        => 'title',
-		'order'          => 'ASC',
-		'meta_query'     => array( array( 'key' => 'price', 'value' => '', 'compare' => '!=' ) ),
-	) );
+		'orderby'		=> 'title',
+		'order'		  => 'ASC',
+	);
+	$with_price = array( 'key' => 'price', 'value' => '', 'compare' => '!=' );
+	// Piatti scelti da TMK con l'etichetta "Anteprima nelle schede ristorante" (chiave 'preview').
+	$picked = get_posts( $base + array( 'meta_query' => array(
+		array( 'key' => 'labels', 'value' => 'preview', 'compare' => 'LIKE' ),
+		$with_price,
+	) ) );
+	if ( $picked ) {
+		return $picked;
+	}
+	// Nessun piatto etichettato: stesso comportamento di prima.
+	return get_posts( $base + array( 'meta_query' => array( $with_price ) ) );
 }
 
 function tmk_render_location( $post = null ) {

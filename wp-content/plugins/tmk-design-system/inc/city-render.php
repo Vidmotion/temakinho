@@ -123,8 +123,8 @@ function tmk_render_city( $term = null ) {
 			<?php echo tmk_render_cta_banner(
 				array(
 					'variant' => 'booking',
-					'title'   => sprintf( 'Prenota la tua tavola a %s', $name ),
-					'copy'    => 'Scegli il concept, la data e l’ora. Al resto pensiamo noi.',
+					'title'   => sprintf( 'Prenota il tuo tavolo a %s', $name ),
+					'copy'    => 'Scegli la location, la data e l’ora. Al resto pensiamo noi.',
 				),
 				tmk_render_booking_widget( array( 'tier' => 1, 'location_name' => $name, 'booking_url' => $booking_href ) )
 			); ?>

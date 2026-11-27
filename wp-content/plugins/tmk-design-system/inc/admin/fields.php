@@ -71,6 +71,7 @@ function tmk_menu_item_labels() {
 	return array(
 		'star'          => 'In evidenza (⭐ sul menu pubblicato)',
 		'alcohol-free'  => 'Alcohol free',
+		'preview'       => 'Anteprima nelle schede ristorante',
 	);
 }
 
